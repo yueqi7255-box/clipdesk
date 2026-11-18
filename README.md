@@ -6,7 +6,7 @@
 
 审片台把这件事拆开了：**看片写意见 → 局部重渲 → 出新版本**。改一个镜头只渲那一个，其余复用缓存。
 
-https://github.com/user-attachments/assets/placeholder
+![审片台界面](docs/screenshot.jpg)
 
 ---
 
