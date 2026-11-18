@@ -10,8 +10,9 @@
  *   clipdesk web                      仅启动 Web 服务
  *   clipdesk list                     列出工作区
  *   clipdesk new <名称> [路径]          新建工作区
- *   clipdesk render <工作区>            完整渲染（配音 + 分段 + 拼接）
+ *   clipdesk render <工作区>            渲染预览（只重渲改动镜头，不生成成片）
  *   clipdesk render <工作区> --no-voice  跳过配音（复用已有）
+ *   clipdesk export <工作区>            导出成片到 versions/vN/
  *   clipdesk thumbs <工作区>            生成缩略图
  *   clipdesk status                   环境检查
  *
@@ -138,7 +139,9 @@ async function cmdRender(args) {
   let lastStage = "";
   const t0 = Date.now();
 
+  const mode = args.includes("--export") ? "export" : "preview";
   const result = await pipeline.renderWorkspace(target.id, {
+    mode,
     skipVoice: noVoice,
     onProgress(stage, pct, msg) {
       if (stage !== lastStage) {
@@ -152,12 +155,24 @@ async function cmdRender(args) {
 
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   console.log("\n");
-  console.log(C.green("✓ 渲染完成"));
-  console.log(`  版本 ${C.bold("v" + result.version)} · 时长 ${result.duration.toFixed(1)}s · 耗时 ${secs}s`);
-  console.log(`  分段：新渲 ${result.rendered} / 复用 ${result.cached}（共 ${result.total}）`);
-  console.log(`  文件 ${C.dim(path.join(target.path, result.file))}`);
-  console.log("");
-  console.log(`  查看 ${C.bold(URL)}`);
+
+  if (result.mode === "preview") {
+    console.log(C.green("✓ 预览已更新"));
+    console.log(`  时长 ${result.duration.toFixed(1)}s · 耗时 ${secs}s`);
+    console.log(`  分段：新渲 ${result.rendered} / 复用 ${result.cached}（共 ${result.total}）`);
+    console.log(C.dim("  未生成成片。审片满意后执行 clipdesk export 出片"));
+    console.log("");
+    console.log(`  查看 ${C.bold(URL)}`);
+  } else {
+    console.log(C.green("✓ 成片已导出"));
+    console.log(`  版本 ${C.bold("v" + result.version)} · 时长 ${result.duration.toFixed(1)}s · 耗时 ${secs}s`);
+    console.log(`  文件 ${C.dim(path.join(target.path, result.file))}`);
+    console.log(`  可直接发送：${C.bold(result.filename)}`);
+  }
+}
+
+async function cmdExport(args) {
+  return cmdRender([...args.filter(a => !a.startsWith("--")), "--export"]);
 }
 
 async function cmdThumbs(args) {
@@ -205,6 +220,7 @@ async function main() {
     case "list": return cmdList();
     case "new": return cmdNew(args);
     case "render": return cmdRender(args);
+    case "export": return cmdExport(args);
     case "thumbs": return cmdThumbs(args);
     case "status": return cmdStatus();
     case "web":

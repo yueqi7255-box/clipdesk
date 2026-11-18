@@ -277,6 +277,23 @@ const server = http.createServer(async (req, res) => {
     }
 
     /* ── 合成整片 ── */
+    /* ── 导出成片 ── */
+    if (p === "/api/export" && req.method === "POST") {
+      const body = await readBody(req);
+      const jobId = "export-" + Date.now();
+      const pipeline = require("./lib/pipeline");
+
+      startJob(jobId, async (progress) => {
+        const r = await pipeline.renderWorkspace(body.id, {
+          mode: "export",
+          skipVoice: true,
+          onProgress: (stage, pct, msg) => progress(pct, msg),
+        });
+        return r;
+      });
+      return sendJson(res, 200, { jobId });
+    }
+
     if (p === "/api/render/concat" && req.method === "POST") {
       const body = await readBody(req);
       const project = await ws.getProject(body.id);

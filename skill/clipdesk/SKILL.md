@@ -46,6 +46,8 @@ pip3 install Pillow
 | 镜头 shot | 最小单元，有编号（S01…）、文稿、时长、素材区间 |
 | 指纹缓存 | 镜头内容变了才重渲，其余复用 `segments/*.mp4` |
 | 模板 template | 控制外壳（顶栏/字幕/节点图），改 JSON 就能调样式 |
+| 预览 preview | 只重渲改动镜头，不生成成片，用于快速看效果 |
+| 出成片 export | 拼接所有镜头 + 音轨，输出 `versions/vN/项目名-vN.mp4` |
 
 ## 项目目录结构
 
@@ -69,8 +71,9 @@ cd "$CLIPDESK_ROOT"
 node bin/clipdesk list                    # 列出所有项目
 node bin/clipdesk status                  # 环境检查
 node bin/clipdesk new "项目名" [路径]       # 新建项目
-node bin/clipdesk render <项目>            # 渲染（含配音）
-node bin/clipdesk render <项目> --no-voice # 渲染（复用已有配音）
+node bin/clipdesk render <项目>            # 渲染预览（不出成片）
+node bin/clipdesk render <项目> --no-voice # 预览，复用已有配音
+node bin/clipdesk export <项目>            # 导出成片到 versions/
 node bin/clipdesk thumbs <项目>            # 生成缩略图
 ```
 
@@ -135,26 +138,50 @@ cat "<项目路径>/project.json"
 python3 -c "import json; json.load(open('<项目路径>/project.json')); print('JSON 合法')"
 ```
 
-## 第 4 步：渲染
+## 第 4 步：渲染预览
 
 ```bash
 cd "$CLIPDESK_ROOT"
 node bin/clipdesk render <项目>
 ```
 
-输出示例：
+输出：
 
 ```
-✓ 渲染完成
-  版本 v3 · 时长 102.4s · 耗时 18.5s
+✓ 预览已更新
+  时长 105.3s · 耗时 7.2s
   分段：新渲 1 / 复用 23（共 24）
+  未生成成片。审片满意后执行 clipdesk export 出片
 ```
 
 `新渲 1 / 复用 23` 说明缓存生效，只重渲了改动的镜头。
 
+**这一步不生成成片**，用户接着在浏览器看效果。
+
 ## 第 5 步：标记意见已解决
 
 把本轮处理的意见 `status` 改为 `resolved`，写回 `project.json`。
+
+## 出成片（用户明确要求时）
+
+**只有用户说「出成片」「导出」「生成成片」「可以交付了」时才执行这一步。**
+
+```bash
+node bin/clipdesk export <项目>
+```
+
+输出：
+
+```
+✓ 成片已导出
+  版本 v6 · 时长 102.4s
+  文件 versions/v6/项目名-v6.mp4
+  可直接发送：项目名-v6.mp4
+```
+
+产物是 `versions/vN/<项目名>-vN.mp4`，含视频与音轨，可直接发人。
+
+**不要自动出片。** 日常改片只做预览，出片是用户满意后的独立动作。
 
 ## 第 6 步：启动服务并回复
 

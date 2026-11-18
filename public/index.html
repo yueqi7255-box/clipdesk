@@ -382,7 +382,14 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
       </div>
     </div>
 
-    <button class="btn btn-solid" id="btnRender" onclick="doRender()">重新合成</button>
+    <button class="btn btn-ghost" id="btnExport" onclick="doExport()" title="拼接所有镜头，导出成片">导出成片</button>
+    <button class="btn btn-solid" id="btnAskAI" onclick="copyPrompt()" title="复制处理意见的提示词，粘贴给 AI">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>
+      </svg>
+      复制给 AI
+    </button>
   </div>
 
   <div id="renderBar" style="display:none;align-items:center;gap:10px;padding:6px 16px;
@@ -526,6 +533,7 @@ async function loadWorkspace(id) {
   state.time = 0;
   openEditor();
   loadThumbs();          // 异步加载缩略图，不阻塞界面
+  startVersionWatch();   // 监听 AI 是否产出了新版本
 }
 
 /** 从成片抽取每个镜头中点的缩略图 */
@@ -632,12 +640,46 @@ function openEditor() {
 }
 function backHome() {
   stopPlay();
+  stopVersionWatch();
   document.getElementById('view-home').classList.add('active');
   document.getElementById('view-editor').classList.remove('active');
   loadWorkspaces();
 }
 
 /* ══════════ 版本切换 ══════════ */
+/* ══════════ 版本监听（AI 改片后自动感知） ══════════ */
+let versionTimer = null;
+let lastKnownVersion = 0;
+
+function startVersionWatch() {
+  stopVersionWatch();
+  lastKnownVersion = PROJECT?.currentVersion || 0;
+  // 每 4 秒检查一次；页面不可见时跳过，省资源
+  versionTimer = setInterval(checkNewVersion, 4000);
+}
+
+function stopVersionWatch() {
+  if (versionTimer) { clearInterval(versionTimer); versionTimer = null; }
+}
+
+async function checkNewVersion() {
+  if (document.hidden || !CURRENT_WS) return;
+  try {
+    const p = await api('/api/project?id=' + encodeURIComponent(CURRENT_WS));
+    const v = p.currentVersion || 0;
+    if (v > lastKnownVersion) {
+      lastKnownVersion = v;
+      toast(`AI 已生成新版本 v${v}，正在刷新…`);
+      await loadWorkspace(CURRENT_WS);
+    }
+  } catch (_) { /* 服务重启等瞬时错误，忽略 */ }
+}
+
+// 切回页面时立刻检查一次
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkNewVersion();
+});
+
 /* ══════════ 下拉：版本 / 模板 ══════════ */
 function toggleDD(id, e) {
   if (e) e.stopPropagation();
@@ -660,7 +702,11 @@ const TEMPLATES = [
 function renderVersionSwitch() {
   const vers = (PROJECT?.versions || []).slice().reverse();
   const cur = PROJECT?.config?.videoFile || '';
-  const current = vers.find(v => v.file === cur) || vers[0];
+  const curVer = PROJECT?.currentVersion || 0;
+  // 优先按 currentVersion 定位，其次按 videoFile，最后取最新
+  const current = vers.find(v => v.version === curVer)
+    || vers.find(v => v.file === cur)
+    || vers[0];
 
   // 标签
   const label = document.getElementById('versionLabel');
@@ -1264,6 +1310,117 @@ async function pollJob(jobId, onTick) {
     await new Promise(r => setTimeout(r, 500));
   }
   throw new Error('任务超时');
+}
+
+/* ══════════ 复制给 AI ══════════ */
+/**
+ * 生成给 AI 的提示词
+ *
+ * 设计原则：只给"去哪里读"，不给"读到了什么"。
+ * 完整意见由 AI 通过 clipdesk Skill 自己读 project.json，
+ * 这样 Skill 才是真正的执行入口，而不是被页面架空。
+ */
+function buildPrompt() {
+  const proj = PROJECT?.name || '未命名项目';
+  const projPath = PROJECT?._wsPath || '';
+  const open = NOTES.filter(n => n.status === 'open').length;
+
+  if (!open) {
+    return [
+      `用 clipdesk 技能，把审片台项目「${proj}」按当前文稿重新渲染预览。`,
+      ``,
+      `项目路径：${projPath}`,
+      ``,
+      `执行：node bin/clipdesk render "${proj}"（只更新改动镜头，不生成成片）`,
+    ].join('\n');
+  }
+
+  return [
+    `用 clipdesk 技能处理审片台项目「${proj}」的审片意见。`,
+    ``,
+    `项目路径：${projPath}`,
+    ``,
+    `执行步骤：`,
+    `1. 按 clipdesk Skill 的说明，读取 project.json 里 status 为 open 的完整意见`,
+    `2. 逐条判断处理方式：改文案 / 调时长 / 需要重录画面`,
+    `3. 直接执行修改，不要先问我确认`,
+    `4. 跑 clipdesk render 渲染新版本（只重渲受影响的镜头）`,
+    `5. 把处理完的意见标记为 resolved`,
+    `6. 告诉我改了哪些镜头、新版本号，以及审片台地址`,
+  ].join('\n');
+}
+
+/** 复制提示词到剪贴板 */
+async function copyPrompt() {
+  const text = buildPrompt();
+  try {
+    await navigator.clipboard.writeText(text);
+    const n = NOTES.filter(x => x.status === 'open').length;
+    toast(n ? `已复制 ${n} 条意见，粘贴给 AI 即可` : '已复制提示词，粘贴给 AI 即可');
+  } catch (e) {
+    // 剪贴板不可用时兜底：弹窗让用户手动复制
+    showPromptModal(text);
+  }
+}
+
+/** 剪贴板被拒时的兜底弹窗 */
+function showPromptModal(text) {
+  let m = document.getElementById('__promptModal');
+  if (m) m.remove();
+  m = document.createElement('div');
+  m.id = '__promptModal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;' +
+    'display:flex;align-items:center;justify-content:center;padding:40px';
+  m.innerHTML = `<div style="background:#14171f;border:1px solid #2a2f3d;border-radius:12px;
+      width:min(720px,100%);max-height:80vh;display:flex;flex-direction:column;padding:18px">
+    <div style="font-size:15px;font-weight:600;margin-bottom:10px">复制下面内容给 AI</div>
+    <textarea readonly style="flex:1;min-height:320px;background:#0b0d14;border:1px solid #2a2f3d;
+      border-radius:8px;color:#eef1f7;padding:12px;font:13px/1.7 ui-monospace,Menlo,monospace;
+      resize:none;outline:none"></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+      <button style="height:30px;padding:0 14px;border-radius:8px;background:#ffffff;color:#111;
+        font-size:13px;font-weight:500">全选并关闭</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  const ta = m.querySelector('textarea');
+  ta.value = text;
+  m.querySelector('button').onclick = () => { ta.select(); document.execCommand('copy'); m.remove(); };
+}
+
+/* ══════════ 导出成片 ══════════ */
+async function doExport() {
+  const btn = document.getElementById('btnExport');
+  const bar = document.getElementById('renderBar');
+  if (!CURRENT_WS) return;
+
+  btn.disabled = true;
+  btn.textContent = '导出中…';
+  bar.style.display = 'flex';
+
+  try {
+    await persist();
+    setRenderStatus('准备导出…', 5);
+    const r = await api('/api/export', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: CURRENT_WS }),
+    });
+    const res = await pollJob(r.jobId, j => setRenderStatus(j.message || '导出中…',
+      5 + Math.max(0, Math.min(100, j.progress || 0)) * 0.95));
+
+    setRenderStatus(`已导出 ${res.filename || ''}`, 100);
+    toast(`成片已导出：${res.filename || '完成'}`);
+    const wsId = CURRENT_WS;
+    await loadWorkspace(wsId);
+    setTimeout(() => { bar.style.display = 'none'; }, 2000);
+  } catch (e) {
+    setRenderStatus('导出失败：' + e.message, 0);
+    toast('导出失败：' + e.message);
+    setTimeout(() => { bar.style.display = 'none'; }, 4000);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '导出成片';
+  }
 }
 
 async function doRender() {
