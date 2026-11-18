@@ -1,0 +1,225 @@
+#!/usr/bin/env node
+/**
+ * clipdesk · 审片台命令行
+ *
+ * 渲染与合成由 CLI 本体执行，不依赖 Web 服务。
+ * Web 服务只负责给界面提供数据与触发入口。
+ *
+ * 用法：
+ *   clipdesk                          启动审片台并打开浏览器
+ *   clipdesk web                      仅启动 Web 服务
+ *   clipdesk list                     列出工作区
+ *   clipdesk new <名称> [路径]          新建工作区
+ *   clipdesk render <工作区>            完整渲染（配音 + 分段 + 拼接）
+ *   clipdesk render <工作区> --no-voice  跳过配音（复用已有）
+ *   clipdesk thumbs <工作区>            生成缩略图
+ *   clipdesk status                   环境检查
+ *
+ * 工作区参数可用 id、全名或部分名称。
+ */
+const { execFile, spawn } = require("node:child_process");
+const path = require("node:path");
+const fs = require("node:fs");
+
+const ROOT = path.resolve(__dirname, "..");
+const PORT = Number(process.env.CLIPDESK_PORT || 4300);
+const URL = `http://127.0.0.1:${PORT}`;
+
+const C = {
+  dim: (s) => `\x1b[2m${s}\x1b[0m`,
+  green: (s) => `\x1b[32m${s}\x1b[0m`,
+  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
+  red: (s) => `\x1b[31m${s}\x1b[0m`,
+  bold: (s) => `\x1b[1m${s}\x1b[0m`,
+};
+
+function progressBar(pct, width = 24) {
+  const filled = Math.round(Math.max(0, Math.min(100, pct)) / 100 * width);
+  return "█".repeat(filled) + C.dim("░".repeat(width - filled));
+}
+
+async function resolveWorkspace(ws, query) {
+  const list = await ws.listWorkspaces();
+  if (!list.length) throw new Error("还没有工作区，用 clipdesk new 创建");
+  if (!query) {
+    if (list.length === 1) return list[0];
+    throw new Error("有多个工作区，请指定：\n" + list.map((w) => `  ${w.id}  ${w.name}`).join("\n"));
+  }
+  const exact = list.find((w) => w.id === query) || list.find((w) => w.name === query);
+  if (exact) return exact;
+  const fuzzy = list.filter((w) => w.name.includes(query));
+  if (fuzzy.length === 1) return fuzzy[0];
+  if (fuzzy.length > 1) {
+    throw new Error("匹配到多个工作区：\n" + fuzzy.map((w) => `  ${w.id}  ${w.name}`).join("\n"));
+  }
+  throw new Error(`找不到工作区：${query}`);
+}
+
+async function serverAlive() {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 1500);
+    const r = await fetch(URL + "/api/health", { signal: ctrl.signal });
+    clearTimeout(timer);
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureServer() {
+  if (await serverAlive()) return false;
+  const child = spawn(process.execPath, [path.join(ROOT, "server.js")], {
+    detached: true,
+    stdio: "ignore",
+    env: { ...process.env, CLIPDESK_PORT: String(PORT) },
+  });
+  let exited = false;
+  child.on("exit", () => { exited = true; });
+  child.unref();
+
+  // 最多等 12 秒
+  for (let i = 0; i < 80; i += 1) {
+    await new Promise((r) => setTimeout(r, 150));
+    if (await serverAlive()) return true;
+    if (exited) throw new Error(`服务进程退出（端口 ${PORT} 可能被占用，试试 CLIPDESK_PORT=4400 clipdesk）`);
+  }
+  throw new Error(`服务启动超时（端口 ${PORT}）`);
+}
+
+function openBrowser(url) {
+  const cmd = process.platform === "darwin" ? "open"
+    : process.platform === "win32" ? "start" : "xdg-open";
+  execFile(cmd, [url], () => {});
+}
+
+/* ══════════ 命令 ══════════ */
+async function cmdList() {
+  const ws = require(path.join(ROOT, "lib/workspace"));
+  const list = await ws.listWorkspaces();
+  if (!list.length) {
+    console.log("暂无工作区。用 " + C.bold("clipdesk new <名称>") + " 创建。");
+    return;
+  }
+  console.log(C.bold("工作区："));
+  for (const w of list) {
+    const v = w.currentVersion ? `v${w.currentVersion}` : "未合成";
+    const open = w.openNotes ? C.yellow(`${w.openNotes} 条待处理`) : C.dim("无待处理");
+    console.log(`  ${C.bold(w.id)}  ${w.name}`);
+    console.log(`    ${C.dim(v)} · ${open} · ${w.shotCount} 镜头`);
+    console.log(`    ${C.dim(w.path)}`);
+  }
+}
+
+async function cmdNew(args) {
+  const ws = require(path.join(ROOT, "lib/workspace"));
+  const name = args[0];
+  if (!name) {
+    console.error("用法: clipdesk new <名称> [路径]");
+    process.exit(1);
+  }
+  const r = await ws.createWorkspace({ name, projectPath: args[1] });
+  console.log(C.green("✓ 已创建：") + r.project.name);
+  console.log(`  路径 ${C.dim(r.workspace.path)}`);
+  console.log(`  下一步：把录屏素材放进 footage/frames/，然后 clipdesk render`);
+}
+
+async function cmdRender(args) {
+  const ws = require(path.join(ROOT, "lib/workspace"));
+  const pipeline = require(path.join(ROOT, "lib/pipeline"));
+
+  const noVoice = args.includes("--no-voice");
+  const query = args.find((a) => !a.startsWith("--"));
+  const target = await resolveWorkspace(ws, query);
+
+  console.log(C.bold(`渲染：${target.name}`) + C.dim(`  (${target.id})`));
+  console.log("");
+
+  let lastStage = "";
+  const t0 = Date.now();
+
+  const result = await pipeline.renderWorkspace(target.id, {
+    skipVoice: noVoice,
+    onProgress(stage, pct, msg) {
+      if (stage !== lastStage) {
+        if (lastStage) console.log("");
+        lastStage = stage;
+      }
+      const label = { voice: "配音", segments: "分段", audio: "音轨", concat: "拼接", version: "版本", done: "完成" }[stage] || stage;
+      process.stdout.write(`\r  ${label.padEnd(4)} ${progressBar(pct)} ${String(pct).padStart(3)}%  ${msg.slice(0, 46).padEnd(46)}`);
+    },
+  });
+
+  const secs = ((Date.now() - t0) / 1000).toFixed(1);
+  console.log("\n");
+  console.log(C.green("✓ 渲染完成"));
+  console.log(`  版本 ${C.bold("v" + result.version)} · 时长 ${result.duration.toFixed(1)}s · 耗时 ${secs}s`);
+  console.log(`  分段：新渲 ${result.rendered} / 复用 ${result.cached}（共 ${result.total}）`);
+  console.log(`  文件 ${C.dim(path.join(target.path, result.file))}`);
+  console.log("");
+  console.log(`  查看 ${C.bold(URL)}`);
+}
+
+async function cmdThumbs(args) {
+  const ws = require(path.join(ROOT, "lib/workspace"));
+  const pipeline = require(path.join(ROOT, "lib/pipeline"));
+  const target = await resolveWorkspace(ws, args[0]);
+  console.log(`生成缩略图：${target.name}`);
+  const r = await pipeline.generateThumbs(target.id);
+  const ok = r.filter((x) => x.file).length;
+  console.log(C.green(`✓ ${ok}/${r.length} 张`));
+}
+
+async function cmdStatus() {
+  const ws = require(path.join(ROOT, "lib/workspace"));
+  const render = require(path.join(ROOT, "lib/render"));
+  const voice = require(path.join(ROOT, "lib/voice"));
+
+  console.log(C.bold("环境检查："));
+  console.log(`  Node    ${process.version}`);
+  console.log(`  ffmpeg  ${C.dim(render.FFMPEG)}`);
+  console.log(`  say     ${(await voice.isAvailable()) ? C.green("可用") : C.yellow("不可用")}`);
+  await new Promise((resolve) => {
+    execFile("python3", ["-c", "import PIL; print(PIL.__version__)"], (e, out) => {
+      console.log(`  Pillow  ${e ? C.red("缺失（无法合成录屏帧）") : out.trim()}`);
+      resolve();
+    });
+  });
+  console.log(`  平台    ${process.platform}`);
+  console.log(`  视频根  ${C.dim(ws.VIDEO_ROOT)}`);
+  console.log(`  服务    ${(await serverAlive()) ? C.green("运行中") : C.dim("未启动")} ${C.dim(URL)}`);
+}
+
+async function cmdWeb(args) {
+  const started = await ensureServer();
+  const target = args[0] ? `${URL}/#${args[0]}` : URL;
+  console.log(started ? C.green("✓ 服务已启动") : "服务已在运行");
+  console.log(`  审片台 ${C.bold(target)}`);
+  if (process.env.CLIPDESK_NO_OPEN !== "1") openBrowser(target);
+}
+
+async function main() {
+  const [cmd, ...args] = process.argv.slice(2);
+
+  switch (cmd) {
+    case "list": return cmdList();
+    case "new": return cmdNew(args);
+    case "render": return cmdRender(args);
+    case "thumbs": return cmdThumbs(args);
+    case "status": return cmdStatus();
+    case "web":
+    case "open": return cmdWeb(args);
+    case "help":
+    case "--help":
+    case "-h":
+      console.log(fs.readFileSync(__filename, "utf8").split("*/")[0]
+        .replace(/^[\s\S]*?\/\*\*/, "").replace(/^ ?\* ?/gm, ""));
+      return;
+    default: return cmdWeb(cmd ? [cmd] : []);
+  }
+}
+
+main().catch((e) => {
+  console.error(C.red("错误: ") + e.message);
+  process.exit(1);
+});

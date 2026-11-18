@@ -1,0 +1,81 @@
+{
+  "id": "classic",
+  "name": "经典",
+  "description": "深色顶栏 + 四阶段节点图，适合功能演示类视频",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "background": "#0b101e"
+  },
+  "scaleBase": 1920,
+  "topbar": {
+    "show": true,
+    "height": 148,
+    "background": "#12172a",
+    "borderColor": [255, 255, 255, 24],
+    "brand": {
+      "show": true,
+      "iconShape": "circle",
+      "iconText": "座",
+      "iconSize": 50,
+      "iconX": 52,
+      "iconY": 22,
+      "iconColor": "#5b5bd6",
+      "iconTextColor": "#ffffff",
+      "titleFontSize": 26,
+      "titleColor": "#ffffff",
+      "titleX": 120,
+      "titleY": 20,
+      "subtitleFontSize": 15,
+      "subtitleColor": "#8b93ad",
+      "subtitleX": 120,
+      "subtitleY": 58
+    },
+    "stages": {
+      "show": true,
+      "nodeRadius": 15,
+      "gap": 176,
+      "rightMargin": 60,
+      "extraRight": 90,
+      "centerY": 74,
+      "lineWidth": 3,
+      "lineColorDone": [91, 91, 214, 220],
+      "lineColorTodo": [255, 255, 255, 40],
+      "activeColor": "#5b5bd6",
+      "activeHaloColor": [91, 91, 214, 70],
+      "activeHaloPad": 6,
+      "doneColor": "#3d3fa0",
+      "doneTextColor": "#c9c9ff",
+      "todoBorderColor": [255, 255, 255, 60],
+      "todoFillColor": [255, 255, 255, 10],
+      "todoTextColor": "#5d6580",
+      "nodeFontSize": 15,
+      "labelGap": 30,
+      "labelFontSize": 15,
+      "labelColorActive": "#ffffff",
+      "labelColorDone": "#a9b0c9",
+      "labelColorTodo": "#5d6580"
+    }
+  },
+  "subtitle": {
+    "show": true,
+    "fontSize": 29,
+    "color": "#ffffff",
+    "background": [10, 14, 28, 212],
+    "radius": 22,
+    "paddingX": 30,
+    "bottomMargin": 24,
+    "singleLineHeight": 66,
+    "lineHeight": 40,
+    "multiLinePadding": 26,
+    "maxWidthMargin": 160
+  },
+  "pointer": {
+    "show": true,
+    "duration": 0.45,
+    "rippleColor": [130, 148, 255, 130],
+    "arrowFill": [255, 255, 255, 245],
+    "arrowStroke": [20, 20, 34, 255]
+  }
+}

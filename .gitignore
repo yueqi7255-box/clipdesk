@@ -1,0 +1,14 @@
+# 依赖与运行时产物
+node_modules/
+__pycache__/
+*.pyc
+
+# ffmpeg 二进制（由 install.sh 下载）
+bin/ffmpeg
+
+# 用户数据
+workspaces.json
+*.log
+
+# macOS
+.DS_Store

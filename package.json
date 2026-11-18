@@ -1,0 +1,13 @@
+{
+  "name": "clipdesk",
+  "version": "0.1.0",
+  "description": "本地视频审片与返工工具：看片写意见，只重渲改动过的镜头",
+  "bin": { "clipdesk": "bin/clipdesk" },
+  "scripts": {
+    "start": "node bin/clipdesk web",
+    "status": "node bin/clipdesk status"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "private": false
+}
