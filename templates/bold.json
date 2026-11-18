@@ -2,41 +2,147 @@
   "id": "bold",
   "name": "强调",
   "description": "高对比顶栏 + 大号节点，适合重点展示关键流程",
-  "canvas": { "width": 1920, "height": 1080, "fps": 30, "background": "#0a0a12" },
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "background": "#0a0a12"
+  },
   "scaleBase": 1920,
   "topbar": {
     "show": true,
     "height": 176,
     "background": "#111827",
-    "borderColor": [255, 255, 255, 30],
+    "borderColor": [
+      255,
+      255,
+      255,
+      30
+    ],
     "brand": {
-      "show": true, "iconShape": "circle", "iconText": "座",
-      "iconSize": 58, "iconX": 56, "iconY": 26,
-      "iconColor": "#6366f1", "iconTextColor": "#ffffff",
-      "titleFontSize": 32, "titleColor": "#ffffff", "titleX": 132, "titleY": 24,
-      "subtitleFontSize": 17, "subtitleColor": "#94a3b8", "subtitleX": 132, "subtitleY": 66
+      "show": true,
+      "iconShape": "circle",
+      "iconText": "座",
+      "iconSize": 58,
+      "iconX": 56,
+      "iconY": 26,
+      "iconColor": "#6366f1",
+      "iconTextColor": "#ffffff",
+      "titleFontSize": 32,
+      "titleColor": "#ffffff",
+      "titleX": 132,
+      "titleY": 24,
+      "subtitleFontSize": 17,
+      "subtitleColor": "#94a3b8",
+      "subtitleX": 132,
+      "subtitleY": 66
     },
     "stages": {
-      "show": true, "nodeRadius": 20, "gap": 200, "rightMargin": 70, "extraRight": 100,
-      "centerY": 88, "lineWidth": 4,
-      "lineColorDone": [99, 102, 241, 240], "lineColorTodo": [255, 255, 255, 48],
-      "activeColor": "#6366f1", "activeHaloColor": [99, 102, 241, 85], "activeHaloPad": 9,
-      "doneColor": "#4338ca", "doneTextColor": "#c7d2fe",
-      "todoBorderColor": [255, 255, 255, 72], "todoFillColor": [255, 255, 255, 14],
+      "show": true,
+      "nodeRadius": 20,
+      "gap": 200,
+      "rightMargin": 70,
+      "extraRight": 100,
+      "centerY": 88,
+      "lineWidth": 4,
+      "lineColorDone": [
+        99,
+        102,
+        241,
+        240
+      ],
+      "lineColorTodo": [
+        255,
+        255,
+        255,
+        48
+      ],
+      "activeColor": "#6366f1",
+      "activeHaloColor": [
+        99,
+        102,
+        241,
+        85
+      ],
+      "activeHaloPad": 9,
+      "doneColor": "#4338ca",
+      "doneTextColor": "#c7d2fe",
+      "todoBorderColor": [
+        255,
+        255,
+        255,
+        72
+      ],
+      "todoFillColor": [
+        255,
+        255,
+        255,
+        14
+      ],
       "todoTextColor": "#64748b",
-      "nodeFontSize": 19, "labelGap": 36, "labelFontSize": 17,
-      "labelColorActive": "#ffffff", "labelColorDone": "#a5b4fc", "labelColorTodo": "#64748b"
+      "nodeFontSize": 19,
+      "labelGap": 36,
+      "labelFontSize": 17,
+      "labelColorActive": "#ffffff",
+      "labelColorDone": "#a5b4fc",
+      "labelColorTodo": "#64748b"
     }
   },
   "subtitle": {
-    "show": true, "fontSize": 33, "color": "#ffffff",
-    "background": [8, 10, 22, 225],
-    "radius": 6, "paddingX": 36, "bottomMargin": 40,
-    "singleLineHeight": 76, "lineHeight": 48, "multiLinePadding": 30,
+    "show": true,
+    "fontSize": 33,
+    "color": "#ffffff",
+    "background": [
+      8,
+      10,
+      22,
+      225
+    ],
+    "radius": 6,
+    "paddingX": 36,
+    "bottomMargin": 40,
+    "singleLineHeight": 76,
+    "lineHeight": 48,
+    "multiLinePadding": 30,
     "maxWidthMargin": 180
   },
-  "pointer": { "show": true, "duration": 0.5,
-    "rippleColor": [99, 102, 241, 140],
-    "arrowFill": [255, 255, 255, 250],
-    "arrowStroke": [15, 23, 42, 255] }
+  "pointer": {
+    "show": true,
+    "duration": 0.5,
+    "rippleColor": [
+      99,
+      102,
+      241,
+      140
+    ],
+    "arrowFill": [
+      255,
+      255,
+      255,
+      250
+    ],
+    "arrowStroke": [
+      15,
+      23,
+      42,
+      255
+    ]
+  },
+  "title": {
+    "iconRadius": 64,
+    "iconY": 0.32,
+    "iconText": "座",
+    "iconColor": "#6366f1",
+    "titleSize": 84,
+    "titleGap": 82,
+    "subSize": 34,
+    "subGap": 68,
+    "lineGap": 116,
+    "lineWidth": 680,
+    "stageGap": 230,
+    "stageGapY": 96,
+    "stageFontSize": 19,
+    "metaSize": 26,
+    "metaGap": 88
+  }
 }

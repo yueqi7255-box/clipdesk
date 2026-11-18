@@ -215,6 +215,14 @@ class Compositor:
         canvas = Image.new("RGB", (self.W, self.H), self.tpl["canvas"]["background"])
         d = ImageDraw.Draw(canvas, "RGBA")
 
+        # ── 片头 / 片尾：独立版式，不画顶栏 ──
+        kind = self.shot.get("kind")
+        if kind in ("intro", "outro"):
+            self._draw_title_page(canvas, d, kind, t_in_shot)
+            if voice_text:
+                self._draw_subtitle(canvas, d, voice_text)
+            return canvas
+
         # ── 1. 素材画面 ──
         f = self.shot.get("footage")
         if f and f.get("start") is not None:
@@ -244,6 +252,88 @@ class Compositor:
             self._draw_subtitle(canvas, d, voice_text)
 
         return canvas
+
+    def _draw_title_page(self, canvas, d, kind, t_in_shot):
+        """片头 / 片尾标题页：图标 + 大标题 + 副标题 + 分隔线"""
+        sc = self.sc
+        cfg = self.tpl.get("title", {})
+        brand = self.brand or {}
+        W, H = self.W, self.H
+
+        # 淡入：前 0.5 秒渐显
+        dur = max(0.001, self.shot.get("duration", 1))
+        alpha = min(1.0, t_in_shot / 0.5) if t_in_shot < 0.5 else 1.0
+        # 淡出：最后 0.4 秒
+        remain = dur - t_in_shot
+        if remain < 0.4:
+            alpha = min(alpha, max(0.0, remain / 0.4))
+
+        overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        od = ImageDraw.Draw(overlay)
+
+        if kind == "intro":
+            title = brand.get("title", "")
+            sub = brand.get("sub", "")
+            extra = ""
+        else:
+            title = self.shot.get("overlay", {}).get("title") or brand.get("outroTitle", "科学排座位")
+            sub = self.shot.get("overlay", {}).get("sub") or brand.get("outroSub", "")
+            extra = self.shot.get("overlay", {}).get("meta") or brand.get("outroMeta", "")
+
+        cx = W / 2
+        icon_r = int(cfg.get("iconRadius", 56) * sc)
+        icon_cy = int(H * cfg.get("iconY", 0.33))
+        accent = cfg.get("iconColor", "#5b5bd6")
+
+        # 圆形图标
+        od.ellipse([cx - icon_r, icon_cy - icon_r, cx + icon_r, icon_cy + icon_r],
+                   fill=accent + "ff")
+        icon_font = pick_font(FONT_CANDIDATES, int(icon_r * 0.9))
+        od.text((cx, icon_cy), cfg.get("iconText", "座"), font=icon_font,
+                fill="#ffffff", anchor="mm")
+
+        # 大标题
+        title_font = pick_font(FONT_CANDIDATES, int(cfg.get("titleSize", 72) * sc))
+        ty = icon_cy + icon_r + int(cfg.get("titleGap", 76) * sc)
+        od.text((cx, ty), title, font=title_font, fill="#ffffff", anchor="mm")
+
+        # 副标题
+        if sub:
+            sub_font = pick_font(FONT_CANDIDATES, int(cfg.get("subSize", 30) * sc))
+            sy = ty + int(cfg.get("subGap", 62) * sc)
+            od.text((cx, sy), sub, font=sub_font, fill="#8b93ad", anchor="mm")
+
+        # 分隔线
+        line_y = ty + int(cfg.get("lineGap", 108) * sc)
+        line_w = int(cfg.get("lineWidth", 600) * sc)
+        od.line([(cx - line_w/2, line_y), (cx + line_w/2, line_y)],
+                fill=(255, 255, 255, 28), width=max(1, int(sc)))
+
+        # 片头：四阶段预览 / 片尾：元信息
+        stages = self.stages or []
+        if kind == "intro" and stages:
+            n = len(stages)
+            gap = int(cfg.get("stageGap", 210) * sc)
+            start_x = cx - gap * (n - 1) / 2
+            stage_y = line_y + int(cfg.get("stageGapY", 90) * sc)
+            label_font = pick_font(FONT_CANDIDATES, int(cfg.get("stageFontSize", 17) * sc))
+            for i, st in enumerate(stages):
+                x = start_x + i * gap
+                dot_r = int(5 * sc)
+                od.ellipse([x - dot_r, stage_y - dot_r, x + dot_r, stage_y + dot_r], fill=accent + "ff")
+                od.text((x, stage_y + int(34 * sc)), st.get("name", ""),
+                        font=label_font, fill="#8b93ad", anchor="ma")
+        elif kind == "outro" and extra:
+            meta_font = pick_font(FONT_CANDIDATES, int(cfg.get("metaSize", 22) * sc))
+            meta_y = line_y + int(cfg.get("metaGap", 82) * sc)
+            od.text((cx, meta_y), extra, font=meta_font, fill="#5d6580", anchor="mm")
+
+        # 应用透明度
+        if alpha < 1.0:
+            r, g, b, a = overlay.split()
+            a = a.point(lambda v: int(v * alpha))
+            overlay = Image.merge("RGBA", (r, g, b, a))
+        canvas.paste(Image.alpha_composite(canvas.convert("RGBA"), overlay).convert("RGB"), (0, 0))
 
     def _draw_placeholder(self, canvas, d):
         d.rectangle([0, self.topbar_h, self.W, self.H], fill="#141824")

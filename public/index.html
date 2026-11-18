@@ -183,8 +183,10 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 .note-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 
 /* ══════ 播放区 ══════ */
-.player-area{flex:1;display:flex;flex-direction:column;padding:14px 18px 0;overflow:hidden;min-height:0}
-.video-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.player-area{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.video-wrap{flex:1;min-height:80px;display:flex;align-items:center;justify-content:center;
+  padding:14px 18px 0;overflow:hidden}
+.video-wrap.pinned{flex:none}
 .video{position:relative;background:#000;border-radius:10px;overflow:hidden;flex:none;
   display:grid;place-items:center}
 .video video{width:100%;height:100%;display:block;object-fit:contain}
@@ -205,7 +207,7 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 .ctl-text:hover{background:var(--surface-2);color:var(--text)}
 
 /* 时间轴 */
-.tl-wrap{flex:none;padding:0 2px 10px}
+.tl-wrap{flex:none;padding:0 2px 8px}
 .tl-labels{position:relative;height:13px;margin-bottom:3px}
 .tl-lab{position:absolute;font-family:var(--mono);font-size:9px;color:var(--text-3);transform:translateX(-50%)}
 .timeline{position:relative;height:18px;cursor:pointer;margin:0 0 4px}
@@ -226,14 +228,13 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 .tl-tick{position:absolute;font-family:var(--mono);font-size:9px;color:var(--text-3);transform:translateX(-50%)}
 
 /* 上下拖动条 */
-.hdivider{height:9px;flex:none;cursor:row-resize;display:flex;align-items:center;justify-content:center;
-  position:relative;z-index:20;background:var(--border-soft);
-  border-top:1px solid var(--canvas);border-bottom:1px solid var(--canvas)}
-.hdivider::before{content:"";width:34px;height:3px;border-radius:2px;background:#3a4152;
-  transition:background .14s var(--ease),width .14s var(--ease),box-shadow .14s var(--ease)}
-.hdivider:hover{background:var(--surface-2)}
-.hdivider:hover::before,.hdivider.drag::before{background:var(--accent);width:50px;
-  box-shadow:0 0 8px rgba(108,108,245,.6)}
+.bottom-dock{flex:none;display:flex;flex-direction:column;padding:0 18px;
+  border-top:1px solid var(--border-soft);background:var(--canvas)}
+.hdivider{height:10px;flex:none;cursor:row-resize;display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:20;margin:0 -18px;background:var(--canvas)}
+.hdivider::before{content:"";width:40px;height:3px;border-radius:2px;background:#2f3543;
+  transition:background .14s var(--ease),width .14s var(--ease)}
+.hdivider:hover::before,.hdivider.drag::before{background:var(--accent);width:56px}
 
 /* ══════ 意见输入（参考图底部卡片样式） ══════ */
 .bottom-fixed{flex:none;display:flex;flex-direction:column;background:var(--canvas);
@@ -425,6 +426,11 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
           </div>
         </div>
 
+      </div>
+
+      <!-- 底部固定区：分隔条 + 控件 + 时间轴 + 意见，始终贴底 -->
+      <div class="bottom-dock" id="bottomDock">
+        <div class="hdivider" id="hdivider" title="拖动调整画面高度"></div>
         <div class="controls">
           <button class="play-btn" id="btnPlay" onclick="togglePlay()">
             <svg id="playIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -434,6 +440,13 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
           <div class="ctl-right">
             <button class="ctl-text" onclick="skip(-5)">−5s</button>
             <button class="ctl-text" onclick="skip(5)">+5s</button>
+            <button class="btn-icon" id="btnMute" title="静音/取消静音" onclick="toggleMute()">
+              <svg id="volIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 5 6 9H2v6h4l5 4z"/>
+                <path id="volWave" d="M15.5 8.5a5 5 0 0 1 0 7"/>
+              </svg>
+            </button>
             <button class="btn-icon" title="全屏" onclick="toggleFullscreen()">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                    stroke-linecap="round" stroke-linejoin="round">
@@ -451,8 +464,6 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
           <div class="tl-ruler" id="tlRuler"></div>
         </div>
       </div>
-
-      <div class="hdivider" id="hdivider"></div>
 
       <div class="bottom-fixed">
 
@@ -777,15 +788,30 @@ async function pickTemplate(id, e) {
   const prev = PROJECT.config?.template || 'classic';
   if (prev === id) return;
 
+  const tpl = TEMPLATES.find(t => t.id === id) || { name: id };
+  const prevName = (TEMPLATES.find(t => t.id === prev) || { name: prev }).name;
+
+  const ok = await confirmDialog({
+    title: `切换到「${tpl.name}」外壳`,
+    body: `模板只改变视频的顶栏、字幕和节点图样式，<b>不会自动重新渲染</b>。<br><br>
+           切换后需要让 AI 重新渲染，新样式才会出现在成片里：<br><br>
+           <span style="display:inline-block;background:var(--surface-2);padding:8px 12px;border-radius:6px;
+                 color:var(--text);font-size:12px">点右上角「复制给 AI」→ 粘贴到对话 → AI 重渲</span>`,
+    confirmText: '切换模板',
+    cancelText: '取消',
+  });
+  if (!ok) return;
+
   PROJECT.config = PROJECT.config || {};
   PROJECT.config.template = id;
   try {
     await persist();
     renderTemplateSwitch();
-    toast('模板已切换，点「重新合成」生效');
+    toast(`已切换到「${tpl.name}」，请复制给 AI 重新渲染`);
   } catch (err) {
     PROJECT.config.template = prev;
     toast('保存失败：' + err.message);
+    renderTemplateSwitch();
   }
 }
 
@@ -986,8 +1012,9 @@ function togglePlay() {
       v.play().catch((err) => {
         console.warn('播放被拒绝:', err.name);
         v.muted = true;
+        renderMuteIcon();
         v.play().then(() => {
-          toast('浏览器要求先静音播放，可点音量按钮恢复声音');
+          toast('浏览器要求先静音播放，点右下角喇叭图标恢复声音');
         }).catch(() => {
           state.playing = false;
           clearInterval(state.timer);
@@ -1007,6 +1034,7 @@ function togglePlay() {
     clearInterval(state.timer);
   }
   renderPlayer();
+  renderMuteIcon();
 }
 function stopPlay() {
   const v = document.getElementById('realVideo');
@@ -1014,10 +1042,81 @@ function stopPlay() {
   state.playing = false; clearInterval(state.timer);
 }
 
+/** 静音切换 */
+function toggleMute() {
+  const v = document.getElementById('realVideo');
+  if (!v) return;
+  v.muted = !v.muted;
+  renderMuteIcon();
+  if (!v.muted) {
+    // 用户主动取消静音时把音量拉满
+    v.volume = 1;
+    // 若当前没在播放，顺带恢复
+    if (!v.paused === false && state.playing) v.play().catch(() => {});
+  }
+}
+
+function renderMuteIcon() {
+  const v = document.getElementById('realVideo');
+  const wave = document.getElementById('volWave');
+  const btn = document.getElementById('btnMute');
+  if (!v || !wave) return;
+  if (v.muted) {
+    wave.setAttribute('d', 'M15 9l6 6M21 9l-6 6');
+    btn.style.color = 'var(--bad)';
+    btn.title = '已静音，点击恢复声音';
+  } else {
+    wave.setAttribute('d', 'M15.5 8.5a5 5 0 0 1 0 7');
+    btn.style.color = '';
+    btn.title = '静音';
+  }
+}
+
 function toggleFullscreen() {
   const box = document.getElementById('videoBox');
   if (!document.fullscreenElement) box.requestFullscreen?.();
   else document.exitFullscreen?.();
+}
+
+/**
+ * 通用确认弹窗
+ * @param {Object} opt { title, body, confirmText, cancelText, tone }
+ * @returns {Promise<boolean>} 用户是否点了确认
+ */
+function confirmDialog(opt) {
+  return new Promise((resolve) => {
+    const { title, body = '', confirmText = '确定', cancelText = '取消', tone = 'normal' } = opt;
+
+    const mask = document.createElement('div');
+    mask.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:99998;' +
+      'display:flex;align-items:center;justify-content:center;padding:40px;backdrop-filter:blur(2px)';
+
+    const accent = tone === 'warn' ? 'var(--warn)' : 'var(--accent)';
+    mask.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+           width:min(520px,100%);box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden">
+        <div style="padding:22px 24px 0">
+          <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px">${title}</div>
+          <div style="font-size:13px;line-height:1.75;color:var(--text-2)">${body}</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding:22px 24px 20px">
+          <button class="dlg-cancel" style="height:32px;padding:0 16px;border-radius:8px;font-size:13px;
+                  color:var(--text-2);background:transparent">${cancelText}</button>
+          <button class="dlg-ok" style="height:32px;padding:0 16px;border-radius:8px;font-size:13px;
+                  font-weight:500;color:#fff;background:${accent}">${confirmText}</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(mask);
+
+    const close = (val) => { mask.remove(); resolve(val); };
+    mask.querySelector('.dlg-ok').onclick = () => close(true);
+    mask.querySelector('.dlg-cancel').onclick = () => close(false);
+    mask.onclick = (e) => { if (e.target === mask) close(false); };
+    document.addEventListener('keydown', function esc(e) {
+      if (e.key === 'Escape') { close(false); document.removeEventListener('keydown', esc); }
+    });
+  });
 }
 
 /** 底部轻提示 */
@@ -1257,32 +1356,59 @@ try {
 
 /* ══════════ 拖动：视频高度 ══════════ */
 const hdivider = document.getElementById('hdivider');
+const videoWrap = document.getElementById('videoWrap');
 const playerArea = document.getElementById('playerArea');
+const bottomDock = document.getElementById('bottomDock');
 let vResizing = false;
+let vDragStartY = 0, vDragStartH = 0, vDragMinH = 80, vDragMaxH = 1200;
+
 hdivider.addEventListener('mousedown', (e) => {
-  vResizing = true; hdivider.classList.add('drag');
-  document.body.style.cursor = 'row-resize'; e.preventDefault();
+  if (e.button !== 0) return;
+  vResizing = true;
+  hdivider.classList.add('drag');
+  document.body.style.cursor = 'row-resize';
+  vDragStartY = e.clientY;
+  vDragStartH = videoWrap.getBoundingClientRect().height;
+
+  // 上限 = player-area 当前高度（即画面最多撑满比赛区，dock 永不被挤）
+  const areaRect = playerArea.getBoundingClientRect();
+  vDragMaxH = Math.max(120, Math.round(areaRect.height - 14)); // 减去上边距
+  vDragMinH = 80;
+
+  e.preventDefault();
 });
+
 window.addEventListener('mousemove', (e) => {
   if (!vResizing) return;
-  const areaRect = playerArea.getBoundingClientRect();
-  const wrapRect = document.getElementById('videoWrap').getBoundingClientRect();
-  const chrome = areaRect.height - wrapRect.height + 8;
-  const h = Math.max(150, Math.min(window.innerHeight - areaRect.top - 60, e.clientY - areaRect.top + chrome));
-  playerArea.style.flex = 'none';
-  playerArea.style.height = h + 'px';
+  const delta = e.clientY - vDragStartY;
+  const h = Math.max(vDragMinH, Math.min(vDragMaxH, vDragStartH + delta));
+  // 只改 video-wrap，player-area 保持 flex:1 不变 → dock 位置完全不动
+  videoWrap.style.flex = 'none';
+  videoWrap.style.height = h + 'px';
   fitVideo();
 });
+
 window.addEventListener('mouseup', () => {
   if (!vResizing) return;
-  vResizing = false; hdivider.classList.remove('drag');
+  vResizing = false;
+  hdivider.classList.remove('drag');
   document.body.style.cursor = '';
-  try { localStorage.setItem('wb.playerHeight', playerArea.style.height); } catch (_) {}
+  try { localStorage.setItem('wb.videoH', videoWrap.style.height); } catch (_) {}
 });
+
+// 恢复上次拖动的画面高度
 try {
-  const h = localStorage.getItem('wb.playerHeight');
-  if (h) { playerArea.style.flex = 'none'; playerArea.style.height = h; }
+  const h = localStorage.getItem('wb.videoH');
+  if (h) { videoWrap.style.flex = 'none'; videoWrap.style.height = h; }
 } catch (_) {}
+
+// 双击分隔线重置为自适应
+hdivider.addEventListener('dblclick', () => {
+  videoWrap.style.flex = '1';
+  videoWrap.style.height = '';
+  try { localStorage.removeItem('wb.videoH'); } catch (_) {}
+  fitVideo();
+});
 
 /* ══════════ 页签 / 筛选 ══════════ */
 document.querySelectorAll('.tab').forEach(t => {
@@ -1394,6 +1520,34 @@ async function doExport() {
   const btn = document.getElementById('btnExport');
   const bar = document.getElementById('renderBar');
   if (!CURRENT_WS) return;
+
+  // 检查待处理意见，给出提示
+  const openNotes = NOTES.filter(n => n.status === 'open').length;
+  const nextVer = (PROJECT?.currentVersion || 0) + 1;
+  const totalDur = SHOTS.reduce((a, s) => a + (s.dur || 0), 0);
+  const mm = Math.floor(totalDur / 60), ss = Math.round(totalDur % 60);
+
+  let warn = '';
+  if (openNotes > 0) {
+    warn = `<div style="margin-top:14px;padding:10px 12px;border-radius:8px;
+            background:rgba(240,168,60,.12);border:1px solid rgba(240,168,60,.3);
+            color:var(--warn);font-size:12px">
+            还有 <b>${openNotes}</b> 条意见未处理，建议先处理完再导出。</div>`;
+  }
+
+  const ok = await confirmDialog({
+    title: '导出成片',
+    body: `将把 ${SHOTS.length} 个镜头拼接成完整视频，输出为：<br><br>
+           <span style="display:inline-block;background:var(--surface-2);padding:8px 12px;border-radius:6px;
+                 color:var(--text);font-size:12px;font-family:var(--mono)">
+           v${nextVer} · ${mm}分${String(ss).padStart(2,'0')}秒</span>
+           <br><br>
+           文件名：<b>${PROJECT?.name || '成片'}-v${nextVer}.mp4</b>
+           ${warn}`,
+    confirmText: '开始导出',
+    cancelText: '再改改',
+  });
+  if (!ok) return;
 
   btn.disabled = true;
   btn.textContent = '导出中…';

@@ -13,7 +13,12 @@
     "show": true,
     "height": 148,
     "background": "#12172a",
-    "borderColor": [255, 255, 255, 24],
+    "borderColor": [
+      255,
+      255,
+      255,
+      24
+    ],
     "brand": {
       "show": true,
       "iconShape": "circle",
@@ -40,15 +45,40 @@
       "extraRight": 90,
       "centerY": 74,
       "lineWidth": 3,
-      "lineColorDone": [91, 91, 214, 220],
-      "lineColorTodo": [255, 255, 255, 40],
+      "lineColorDone": [
+        91,
+        91,
+        214,
+        220
+      ],
+      "lineColorTodo": [
+        255,
+        255,
+        255,
+        40
+      ],
       "activeColor": "#5b5bd6",
-      "activeHaloColor": [91, 91, 214, 70],
+      "activeHaloColor": [
+        91,
+        91,
+        214,
+        70
+      ],
       "activeHaloPad": 6,
       "doneColor": "#3d3fa0",
       "doneTextColor": "#c9c9ff",
-      "todoBorderColor": [255, 255, 255, 60],
-      "todoFillColor": [255, 255, 255, 10],
+      "todoBorderColor": [
+        255,
+        255,
+        255,
+        60
+      ],
+      "todoFillColor": [
+        255,
+        255,
+        255,
+        10
+      ],
       "todoTextColor": "#5d6580",
       "nodeFontSize": 15,
       "labelGap": 30,
@@ -62,7 +92,12 @@
     "show": true,
     "fontSize": 29,
     "color": "#ffffff",
-    "background": [10, 14, 28, 212],
+    "background": [
+      10,
+      14,
+      28,
+      212
+    ],
     "radius": 22,
     "paddingX": 30,
     "bottomMargin": 24,
@@ -74,8 +109,40 @@
   "pointer": {
     "show": true,
     "duration": 0.45,
-    "rippleColor": [130, 148, 255, 130],
-    "arrowFill": [255, 255, 255, 245],
-    "arrowStroke": [20, 20, 34, 255]
+    "rippleColor": [
+      130,
+      148,
+      255,
+      130
+    ],
+    "arrowFill": [
+      255,
+      255,
+      255,
+      245
+    ],
+    "arrowStroke": [
+      20,
+      20,
+      34,
+      255
+    ]
+  },
+  "title": {
+    "iconRadius": 56,
+    "iconY": 0.325,
+    "iconText": "座",
+    "iconColor": "#5b5bd6",
+    "titleSize": 72,
+    "titleGap": 76,
+    "subSize": 30,
+    "subGap": 62,
+    "lineGap": 108,
+    "lineWidth": 600,
+    "stageGap": 210,
+    "stageGapY": 90,
+    "stageFontSize": 17,
+    "metaSize": 22,
+    "metaGap": 82
   }
 }

@@ -2,21 +2,40 @@
   "id": "minimal",
   "name": "极简",
   "description": "无顶栏，画面最大化，只保留字幕",
-  "canvas": { "width": 1920, "height": 1080, "fps": 30, "background": "#000000" },
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "background": "#000000"
+  },
   "scaleBase": 1920,
   "topbar": {
     "show": false,
     "height": 0,
     "background": "#000000",
-    "borderColor": [255, 255, 255, 0],
-    "brand": { "show": false },
-    "stages": { "show": false }
+    "borderColor": [
+      255,
+      255,
+      255,
+      0
+    ],
+    "brand": {
+      "show": false
+    },
+    "stages": {
+      "show": false
+    }
   },
   "subtitle": {
     "show": true,
     "fontSize": 34,
     "color": "#ffffff",
-    "background": [0, 0, 0, 190],
+    "background": [
+      0,
+      0,
+      0,
+      190
+    ],
     "radius": 4,
     "paddingX": 34,
     "bottomMargin": 60,
@@ -25,8 +44,43 @@
     "multiLinePadding": 30,
     "maxWidthMargin": 200
   },
-  "pointer": { "show": true, "duration": 0.45,
-    "rippleColor": [255, 255, 255, 130],
-    "arrowFill": [255, 255, 255, 245],
-    "arrowStroke": [20, 20, 34, 255] }
+  "pointer": {
+    "show": true,
+    "duration": 0.45,
+    "rippleColor": [
+      255,
+      255,
+      255,
+      130
+    ],
+    "arrowFill": [
+      255,
+      255,
+      255,
+      245
+    ],
+    "arrowStroke": [
+      20,
+      20,
+      34,
+      255
+    ]
+  },
+  "title": {
+    "iconRadius": 48,
+    "iconY": 0.34,
+    "iconText": "座",
+    "iconColor": "#ffffff",
+    "titleSize": 80,
+    "titleGap": 70,
+    "subSize": 32,
+    "subGap": 64,
+    "lineGap": 104,
+    "lineWidth": 520,
+    "stageGap": 220,
+    "stageGapY": 88,
+    "stageFontSize": 18,
+    "metaSize": 24,
+    "metaGap": 80
+  }
 }
