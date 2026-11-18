@@ -46,7 +46,7 @@ pip3 install Pillow
 | 镜头 shot | 最小单元，有编号（S01…）、文稿、时长、素材区间 |
 | 指纹缓存 | 镜头内容变了才重渲，其余复用 `segments/*.mp4` |
 | 模板 template | 控制外壳（顶栏/字幕/节点图），改 JSON 就能调样式 |
-| 预览 preview | 只重渲改动镜头，不生成成片，用于快速看效果 |
+| 预览 preview | 重渲改动镜头 → 拼成 `preview/preview.mp4`（自带音轨），播放器播它 |
 | 出成片 export | 拼接所有镜头 + 音轨，输出 `versions/vN/项目名-vN.mp4` |
 
 ## 项目目录结构
@@ -58,7 +58,8 @@ pip3 install Pillow
 │   ├── record.json   帧时间戳与点击坐标
 │   └── frames/       f00000.png, f00001.png …
 ├── voice/            配音（自动生成）
-├── segments/         分段渲染缓存（自动生成）
+├── segments/         分段缓存（视频+音轨，自动生成）
+├── preview/          预览片（自动生成）
 ├── thumbs/           缩略图（自动生成）
 └── versions/v1/video.mp4
 ```

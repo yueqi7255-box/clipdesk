@@ -926,7 +926,8 @@ function renderPlayer() {
 
   const v = document.getElementById('realVideo');
   const ph = document.getElementById('vPlaceholder');
-  const file = PROJECT?.config?.videoFile;
+  // 优先播预览文件（反映最新改动），没有才退回成片
+  const file = PROJECT?.config?.previewFile || PROJECT?.config?.videoFile;
 
   if (!file) {
     v.style.display = 'none';
