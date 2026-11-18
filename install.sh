@@ -90,6 +90,16 @@ else
   yellow "… 非 macOS，配音功能不可用（其他功能正常）"
 fi
 
+# ── 3.5 Pillow（逐帧合成必需）──
+if python3 -c "import PIL" 2>/dev/null; then
+  PILLOW_VER=$(python3 -c "import PIL; print(PIL.__version__)" 2>/dev/null)
+  green "✓ Pillow $PILLOW_VER"
+else
+  red "✗ 缺少 Pillow（逐帧合成必需）"
+  echo "  请执行：pip3 install Pillow"
+  exit 1
+fi
+
 # ── 4. 注册命令 ──
 mkdir -p "$BIN_DST"
 ln -sf "$ROOT/bin/clipdesk" "$BIN_DST/clipdesk"
