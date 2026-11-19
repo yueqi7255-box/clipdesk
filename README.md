@@ -43,6 +43,48 @@ AI 会自己完成克隆、安装、环境检查，并把结果告诉你。**你
 
 ---
 
+## 配套 Skill
+
+clipdesk 只管**渲染与返工**，不负责录屏。
+
+要做「从零录一个演示视频」，需要配套的录制 Skill：
+
+| Skill | 作用 | 安装方式 |
+| --- | --- | --- |
+| **demo-video** | 分析系统 → 设计分镜 → 录屏 → 切片 → 接入 clipdesk | 见下 |
+| clipdesk | 渲染、审片、返工、出成片 | `install.sh` 自动安装 |
+
+### 两者怎么配合
+
+```
+demo-video 录制 + 切片  →  产出 clipdesk 项目结构
+                              ↓
+                        clipdesk 渲染预览
+                              ↓
+                          你审片写意见
+                              ↓
+        ┌─────────────────────┴─────────────────────┐
+        ↓                                           ↓
+   文案/时长类修改                            画面要重录
+   clipdesk 直接改                          回到 demo-video
+```
+
+**接口是数据格式，不是 Skill 名字。** 只要产出符合 `footage/record.json` + `project.json` 规范，任何录制方式都能接入。
+
+### 安装 demo-video
+
+```bash
+# 把这段发给 AI
+帮我安装 demo-video Skill，仓库地址和 clipdesk 在同一个作者名下。
+或者直接把 SKILL.md 放到 ~/.dsh/skills/demo-video/
+```
+
+### 只做纯文字视频？
+
+不需要 demo-video。直接在 `project.json` 里写镜头和文稿，`footage` 留 `null`，clipdesk 会渲染纯色文字卡。
+
+---
+
 ## 与 AI 协作
 
 这是这个工具的核心用法：**你不用记命令，直接用说话的方式让 AI 干活。**
