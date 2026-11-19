@@ -8,8 +8,9 @@
 #   2. 准备 ffmpeg（优先用项目内置，其次系统，最后按需下载）
 #   3. 检查 macOS say（配音用）
 #   4. 注册 clipdesk 命令
-#   5. 安装 Skill 到 ~/.dsh/skills/（clipdesk + demo-video）
-#   6. 自检
+#   5. 确认视频项目根目录（安装时只需确认一次）
+#   6. 安装 Skill 到 ~/.dsh/skills/（clipdesk + demo-video）
+#   7. 自检
 
 set -euo pipefail
 
@@ -113,7 +114,62 @@ case ":$PATH:" in
      echo "    echo 'export PATH=\"\$PATH:$BIN_DST\"' >> ~/.zshrc && source ~/.zshrc" ;;
 esac
 
-# ── 5. 安装 Skill ──
+# ── 5. 确认视频项目根目录 ──
+CONF_FILE="$HOME/.clipdesk.json"
+DEFAULT_VIDEO_ROOT="$HOME/Videos/clipdesk"
+
+echo "── 视频项目根目录 ──"
+
+# 已有配置则沿用
+EXISTING_ROOT=""
+if [ -f "$CONF_FILE" ]; then
+  EXISTING_ROOT=$(node -e "try{const c=require('$CONF_FILE');process.stdout.write(c.videoRoot||'')}catch(e){}" 2>/dev/null || true)
+fi
+
+if [ -n "$EXISTING_ROOT" ]; then
+  green "✓ 已有配置：$EXISTING_ROOT"
+  VIDEO_ROOT="$EXISTING_ROOT"
+else
+  echo ""
+  echo "  所有视频项目都会建在这个目录下，每个项目一个子文件夹。"
+  echo ""
+  echo "  默认：$DEFAULT_VIDEO_ROOT"
+  echo ""
+  printf "  直接回车用默认，或输入其他路径："
+  read -r USER_ROOT || true
+  USER_ROOT="${USER_ROOT:-}"
+  # 去掉首尾空格与包裹的引号
+  USER_ROOT="${USER_ROOT#"${USER_ROOT%%[![:space:]]*}"}"
+  USER_ROOT="${USER_ROOT%"${USER_ROOT##*[![:space:]]}"}"
+  if [[ "$USER_ROOT" == \"*\" ]]; then USER_ROOT="${USER_ROOT#\"}"; fi
+  if [[ "$USER_ROOT" == *\" ]]; then USER_ROOT="${USER_ROOT%\"}"; fi
+
+  if [ -z "$USER_ROOT" ]; then
+    VIDEO_ROOT="$DEFAULT_VIDEO_ROOT"
+  else
+    # 展开 ~ 和相对路径
+    case "$USER_ROOT" in
+      "~"*) VIDEO_ROOT="${USER_ROOT/#\~/$HOME}" ;;
+      /*)   VIDEO_ROOT="$USER_ROOT" ;;
+      *)    VIDEO_ROOT="$(cd "$(dirname "$USER_ROOT")" 2>/dev/null && pwd)/$(basename "$USER_ROOT")" || VIDEO_ROOT="$USER_ROOT" ;;
+    esac
+  fi
+
+  mkdir -p "$VIDEO_ROOT" 2>/dev/null || {
+    red "✗ 无法创建目录：$VIDEO_ROOT"
+    echo "  请确认路径是否可写，然后重新运行安装。"
+    exit 1
+  }
+
+  # 写入配置
+  printf '{\n  "videoRoot": "%s"\n}\n' "$VIDEO_ROOT" > "$CONF_FILE"
+  green "✓ 根目录：$VIDEO_ROOT"
+  echo "  配置已保存到 $CONF_FILE"
+fi
+
+echo ""
+
+# ── 6. 安装 Skill ──
 if [ -d "$SKILL_SRC" ]; then
   mkdir -p "$SKILL_DST"
   # clipdesk：渲染与返工
@@ -136,7 +192,7 @@ else
   yellow "… 未找到 skill 目录，跳过"
 fi
 
-# ── 6. 自检 ──
+# ── 7. 自检 ──
 echo ""
 echo "── 自检 ──"
 cd "$ROOT"
