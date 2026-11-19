@@ -418,8 +418,6 @@ clipdesk status
 | `CLIPDESK_FONT` | 自动探测 | 中文字体路径 |
 | `FFMPEG_PATH` | 自动探测 | ffmpeg 路径 |
 
-> **建议把项目放在本地磁盘。** 放在 iCloud / 网盘同步目录里，读帧会慢几十倍（实测单帧读取从 58ms 变成 3 秒）。
-
 ---
 
 ## 技术实现
