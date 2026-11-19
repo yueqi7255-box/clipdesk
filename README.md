@@ -51,8 +51,10 @@ clipdesk 只管**渲染与返工**，不负责录屏。
 
 | Skill | 作用 | 安装方式 |
 | --- | --- | --- |
-| **demo-video** | 分析系统 → 设计分镜 → 录屏 → 切片 → 接入 clipdesk | 见下 |
-| clipdesk | 渲染、审片、返工、出成片 | `install.sh` 自动安装 |
+| **demo-video** | 分析系统 → 设计分镜 → 录屏 → 切片 → 接入 clipdesk | `install.sh` 自动安装 |
+| **clipdesk** | 渲染、审片、返工、出成片 | `install.sh` 自动安装 |
+
+两个 Skill 会一起装到 `~/.dsh/skills/`。
 
 ### 两者怎么配合
 
@@ -70,14 +72,6 @@ demo-video 录制 + 切片  →  产出 clipdesk 项目结构
 ```
 
 **接口是数据格式，不是 Skill 名字。** 只要产出符合 `footage/record.json` + `project.json` 规范，任何录制方式都能接入。
-
-### 安装 demo-video
-
-```bash
-# 把这段发给 AI
-帮我安装 demo-video Skill，仓库地址和 clipdesk 在同一个作者名下。
-或者直接把 SKILL.md 放到 ~/.dsh/skills/demo-video/
-```
 
 ### 只做纯文字视频？
 

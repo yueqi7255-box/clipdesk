@@ -8,13 +8,14 @@
 #   2. 准备 ffmpeg（优先用项目内置，其次系统，最后按需下载）
 #   3. 检查 macOS say（配音用）
 #   4. 注册 clipdesk 命令
-#   5. 安装配套 Skill 到 ~/.dsh/skills/
+#   5. 安装 Skill 到 ~/.dsh/skills/（clipdesk + demo-video）
 #   6. 自检
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_SRC="$ROOT/skill/clipdesk"
+DEMO_SKILL_SRC="$ROOT/skill/demo-video"
 SKILL_DST="${DSH_SKILLS_DIR:-$HOME/.dsh/skills}"
 BIN_DST="${CLIPDESK_BIN_DIR:-$HOME/.local/bin}"
 
@@ -115,11 +116,22 @@ esac
 # ── 5. 安装 Skill ──
 if [ -d "$SKILL_SRC" ]; then
   mkdir -p "$SKILL_DST"
+  # clipdesk：渲染与返工
   rm -rf "$SKILL_DST/clipdesk"
   cp -R "$SKILL_SRC" "$SKILL_DST/clipdesk"
   # 把实际安装路径写进 Skill，供 Agent 定位
   echo "$ROOT" > "$SKILL_DST/clipdesk/INSTALL_PATH"
   green "✓ Skill 已安装：$SKILL_DST/clipdesk"
+
+  # demo-video：录屏与切片（配套 Skill）
+  if [ -d "$DEMO_SKILL_SRC" ]; then
+    rm -rf "$SKILL_DST/demo-video"
+    cp -R "$DEMO_SKILL_SRC" "$SKILL_DST/demo-video"
+    echo "$ROOT" > "$SKILL_DST/demo-video/INSTALL_PATH"
+    green "✓ Skill 已安装：$SKILL_DST/demo-video"
+  else
+    yellow "… 未找到 demo-video skill，跳过"
+  fi
 else
   yellow "… 未找到 skill 目录，跳过"
 fi
@@ -132,6 +144,10 @@ CLIPDESK_NO_OPEN=1 node bin/clipdesk status || true
 
 echo ""
 green "安装完成"
+echo ""
+echo "已装 Skill："
+echo "  clipdesk      渲染、审片、返工、出成片"
+echo "  demo-video    录屏、切片、接入 clipdesk"
 echo ""
 echo "下一步："
 echo "  clipdesk              启动审片台并打开浏览器"
