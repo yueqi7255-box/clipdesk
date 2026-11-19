@@ -68,14 +68,18 @@ async function sendFile(req, res, file) {
       "content-length": end - start + 1,
       "content-range": `bytes ${start}-${end}/${stat.size}`,
       "accept-ranges": "bytes",
+      "cache-control": "no-store",
     });
     return fs.createReadStream(file, { start, end }).pipe(res);
   }
 
+  // 页面与脚本禁止缓存，避免改了代码浏览器还用旧的
+  const noCache = [".html", ".js", ".css", ".json"].includes(ext);
   res.writeHead(200, {
     "content-type": type,
     "content-length": stat.size,
     "accept-ranges": "bytes",
+    "cache-control": noCache ? "no-store, must-revalidate" : "public, max-age=3600",
   });
   fs.createReadStream(file).pipe(res);
 }
@@ -383,6 +387,47 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, "127.0.0.1", () => {
-  console.log(`视频剪辑台已启动: http://127.0.0.1:${PORT}`);
-});
+/* ── 单实例保护：端口被占用时先尝试回收旧实例 ── */
+function killPortOccupant(port) {
+  const { execSync } = require("node:child_process");
+  try {
+    const pids = execSync(`lsof -ti:${port}`, { encoding: "utf8" }).trim().split("\n").filter(Boolean);
+    for (const pid of pids) {
+      // 只清理我们自己启动的 node server.js，避免误伤其他程序
+      try {
+        const cmd = execSync(`ps -p ${pid} -o command=`, { encoding: "utf8" }).trim();
+        if (cmd.includes("server.js") || cmd.includes("clipdesk")) {
+          process.kill(Number(pid), "SIGKILL");
+          console.log(`  已回收旧实例 PID ${pid}`);
+        }
+      } catch { /* 进程已退出 */ }
+    }
+    return pids.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function startServer(retried = false) {
+  server.removeAllListeners("error");
+  server.once("error", (err) => {
+    if (err.code === "EADDRINUSE" && !retried) {
+      console.log(`  端口 ${PORT} 被占用，尝试回收…`);
+      const killed = killPortOccupant(PORT);
+      if (killed) {
+        setTimeout(() => startServer(true), 800);
+        return;
+      }
+      console.error(`端口 ${PORT} 被其他程序占用，请先关闭它，或设置 CLIPDESK_PORT 换端口`);
+      process.exit(1);
+    }
+    console.error("启动失败:", err.message);
+    process.exit(1);
+  });
+
+  server.listen(PORT, "127.0.0.1", () => {
+    console.log(`审片台已启动: http://127.0.0.1:${PORT}`);
+  });
+}
+
+startServer();

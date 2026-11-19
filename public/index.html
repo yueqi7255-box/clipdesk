@@ -171,6 +171,10 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 .note-group{margin-bottom:14px}
 .note-group-head{font-size:11px;color:var(--text-3);margin-bottom:6px;padding:0 2px;
   display:flex;align-items:center;gap:5px}
+.note-group-head.foldable{cursor:pointer;user-select:none;border-radius:4px;padding:3px 4px;margin-left:-2px}
+.note-group-head.foldable:hover{background:var(--surface-2);color:var(--text-2)}
+.fold-arrow{font-size:9px;transition:transform .12s;display:inline-block;width:10px}
+.fold-arrow.folded{transform:rotate(-90deg)}
 .note-card{background:var(--surface-2);border-radius:9px;padding:9px 10px;margin-bottom:6px;cursor:pointer;
   transition:background .14s var(--ease)}
 .note-card:hover{background:var(--surface-3)}
@@ -178,6 +182,8 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 .note-card-top{display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .note-tc{font-family:var(--mono);font-size:10px;color:var(--text-3)}
 .note-sid{font-family:var(--mono);font-size:10px;color:#a5a5ff}
+.note-scope{font-size:10px;padding:1px 5px;border-radius:3px;background:var(--surface-3);color:var(--text-3)}
+.note-scope.all{background:rgba(240,168,60,.16);color:var(--warn)}
 .note-txt{font-size:12px;line-height:17px;color:var(--text)}
 .note-thumb{width:100%;height:60px;border-radius:6px;background:#000;margin-bottom:6px;overflow:hidden}
 .note-thumb img{width:100%;height:100%;object-fit:cover;display:block}
@@ -190,6 +196,12 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 .video{position:relative;background:#000;border-radius:10px;overflow:hidden;flex:none;
   display:grid;place-items:center}
 .video video{width:100%;height:100%;display:block;object-fit:contain}
+.video{cursor:pointer}
+.vplay-hint{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;
+  opacity:0;transition:opacity .18s}
+.vplay-hint svg{width:56px;height:56px;padding:17px;box-sizing:border-box;border-radius:50%;
+  background:rgba(0,0,0,.55);color:#fff;backdrop-filter:blur(2px)}
+.video.paused .vplay-hint{opacity:1}
 .vph{position:absolute;inset:0;display:grid;place-items:center;color:var(--text-3);
   font-size:13px;text-align:center;padding:20px;line-height:22px}
 .vph.hide{display:none}
@@ -211,17 +223,17 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 .tl-labels{position:relative;height:13px;margin-bottom:3px}
 .tl-lab{position:absolute;font-family:var(--mono);font-size:9px;color:var(--text-3);transform:translateX(-50%)}
 .timeline{position:relative;height:18px;cursor:pointer;margin:0 0 4px}
-.tl-seg{position:absolute;top:0;height:100%;border-radius:4px;background:var(--surface-3);
-  transition:background .14s var(--ease),transform .14s var(--ease)}
-.tl-seg:hover{background:#3a4152;transform:scaleY(1.12)}
-.tl-seg.sel{background:var(--accent)}
+.tl-seg{position:absolute;top:0;height:100%;border-radius:4px;background-color:#232833}
+.tl-seg:hover{background-color:#4a5266}
+.tl-seg.sel{background-color:var(--accent)}
+.tl-seg.sel:hover{background-color:#8585ff}
 .tl-mark{position:absolute;top:-5px;width:7px;height:7px;border-radius:50%;background:var(--warn);
   transform:translateX(-50%);cursor:pointer;z-index:5;transition:transform .14s var(--ease);
   box-shadow:0 0 0 2px var(--canvas)}
 .tl-mark:hover{transform:translateX(-50%) scale(1.5)}
 .tl-mark.done{background:var(--ok)}
-.tl-playhead{position:absolute;top:-6px;bottom:-6px;width:1.5px;background:var(--white);
-  pointer-events:none;z-index:6}
+.tl-playhead{position:absolute;left:0;top:-6px;bottom:-6px;width:1.5px;background:var(--white);
+  pointer-events:none;z-index:6;will-change:transform}
 .tl-hdot{position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:6px;height:6px;
   border-radius:50%;background:var(--white)}
 .tl-ruler{position:relative;height:14px}
@@ -232,21 +244,29 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
   border-top:1px solid var(--border-soft);background:var(--canvas)}
 .hdivider{height:10px;flex:none;cursor:row-resize;display:flex;align-items:center;justify-content:center;
   position:relative;z-index:20;margin:0 -18px;background:var(--canvas)}
-.hdivider::before{content:"";width:40px;height:3px;border-radius:2px;background:#2f3543;
-  transition:background .14s var(--ease),width .14s var(--ease)}
+.hdivider::before{content:"";width:40px;height:3px;border-radius:2px;background:#2f3543}
 .hdivider:hover::before,.hdivider.drag::before{background:var(--accent);width:56px}
 
 /* ══════ 意见输入（参考图底部卡片样式） ══════ */
-.bottom-fixed{flex:none;display:flex;flex-direction:column;background:var(--canvas);
-  border-top:1px solid var(--border-soft)}
-.comment-bar{flex:none;padding:8px 18px 12px}
-.cbar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;
+.bottom-fixed{flex:none;display:flex;flex-direction:column;background:var(--canvas)}
+.comment-bar{flex:none;padding:6px 18px 10px}
+.cbar{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:7px 10px;
   transition:border-color .14s var(--ease)}
 .cbar:focus-within{border-color:var(--accent)}
-.cbar textarea{width:100%;min-height:32px;max-height:100px;background:transparent;border:none;outline:none;
+.cbar textarea{width:100%;min-height:30px;max-height:88px;background:transparent;border:none;outline:none;
   color:var(--text);font:inherit;font-size:13px;line-height:20px;resize:none}
 .cbar textarea::placeholder{color:var(--text-3)}
-.cbar-foot{display:flex;align-items:center;gap:6px;margin-top:6px}
+.cbar-foot{display:flex;align-items:center;gap:6px;margin-top:5px}
+
+/* 矮屏适配：窗口高度不足时压缩底部占用 */
+@media (max-height: 820px) {
+  .comment-bar{padding:4px 18px 8px}
+  .cbar{padding:6px 10px}
+  .cbar textarea{min-height:26px;max-height:56px}
+  .cbar-foot{margin-top:4px}
+  .controls{height:40px;padding:6px 2px 4px}
+  .tl-wrap{padding-bottom:6px}
+}
 .cchip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:6px;
   font-size:11px;color:var(--text-2);background:var(--surface-2);
   transition:background .14s var(--ease),color .14s var(--ease)}
@@ -324,7 +344,7 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 
     <!-- 模板下拉 -->
     <div class="dd" id="ddTemplate">
-      <button class="dd-btn" onclick="toggleDD('ddTemplate', event)" title="选择外壳模板">
+      <button class="dd-btn" onclick="openTemplateDialog(event)" title="选择外壳模板">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18"/>
@@ -333,7 +353,20 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
       </button>
-      <div class="dd-menu" id="templateMenu"></div>
+    </div>
+
+    <!-- 语音短句间隔 -->
+    <div class="dd" id="ddGap">
+      <button class="dd-btn" onclick="toggleDD('ddGap', event)" title="语音短句之间的静音间隔">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 12h8M4 12h2M18 12h2"/>
+        </svg>
+        <span class="dd-label" id="gapLabel">间隔 0.5s</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="dd-menu" id="gapMenu"></div>
     </div>
 
     <div class="spacer"></div>
@@ -420,9 +453,14 @@ button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
     <div class="pane-main">
       <div class="player-area" id="playerArea">
         <div class="video-wrap" id="videoWrap">
-          <div class="video" id="videoBox">
+          <div class="video" id="videoBox" onclick="onVideoClick()" title="点击播放 / 暂停">
             <video id="realVideo" preload="auto" playsinline></video>
             <div class="vph" id="vPlaceholder">尚未合成</div>
+            <div class="vplay-hint" id="vPlayHint">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -538,7 +576,22 @@ async function loadWorkspace(id) {
   SHOTS.forEach(sh => { sh.start = acc; acc += sh.dur; });
   TOTAL = acc || 0;
 
-  NOTES = (PROJECT.notes || []).map(n => ({ ...n }));
+  // 补全范围字段：旧数据只有 time，按 scope 推导 start/end
+  NOTES = (PROJECT.notes || []).map(n => {
+    const t = n.time ?? n.start ?? 0;
+    let start = n.start ?? t;
+    let end = n.end;
+    if (end == null) {
+      // 旧数据兼容：按 scope 推范围
+      if (n.scope === 'all') { start = 0; end = TOTAL; }
+      else if (n.scope === 'shot') {
+        const sh = SHOTS.find(x => x.id === n.shotId);
+        if (sh) { start = sh.start; end = sh.start + sh.dur; }
+        else { start = t; end = t; }
+      } else { start = t; end = t; }
+    }
+    return { ...n, start, end };
+  });
 
   state.shot = SHOTS[0]?.id || null;
   state.time = 0;
@@ -680,8 +733,11 @@ async function checkNewVersion() {
     const v = p.currentVersion || 0;
     if (v > lastKnownVersion) {
       lastKnownVersion = v;
-      toast(`AI 已生成新版本 v${v}，正在刷新…`);
-      await loadWorkspace(CURRENT_WS);
+      toast(`已生成新版本 v${v}`);
+      // 只更新版本信息，不重载播放器，避免打断正在进行的播放/审片
+      PROJECT = p;
+      renderVersionSwitch();
+      renderTemplateSwitch();
     }
   } catch (_) { /* 服务重启等瞬时错误，忽略 */ }
 }
@@ -763,27 +819,194 @@ function pickVersion(v, e) {
 function renderTemplateSwitch() {
   const tplId = PROJECT?.config?.template || 'classic';
   const cur = TEMPLATES.find(t => t.id === tplId) || TEMPLATES[0];
-
   const label = document.getElementById('templateLabel');
   if (label) label.textContent = cur.name;
+}
 
-  const menu = document.getElementById('templateMenu');
+/* ══════════ 模板选择弹窗 ══════════ */
+
+/** 用 SVG 画出模板的示意图：顶栏 + 画面 + 字幕条 */
+function templatePreviewSVG(id) {
+  const isClassic = id === 'classic';
+  const isBold = id === 'bold';
+  const isMinimal = id === 'minimal';
+
+  // 每个模板的视觉特征
+  const bg = isBold ? '#0a0a12' : '#0b0d14';
+  const topH = isMinimal ? 0 : (isBold ? 30 : 24);
+  const topBg = isBold ? '#111827' : '#14171f';
+  const accent = isBold ? '#8b8bf5' : '#5b5bd6';
+
+  return `
+    <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+      <rect width="320" height="180" fill="${bg}"/>
+
+      ${topH ? `
+        <rect x="0" y="0" width="320" height="${topH}" fill="${topBg}"/>
+        <circle cx="16" cy="${topH/2}" r="7" fill="${accent}"/>
+        <rect x="28" y="${topH/2-3}" width="52" height="6" rx="3" fill="#e8e8f0" opacity=".85"/>
+        ${isBold
+          ? `<rect x="150" y="${topH/2-2}" width="26" height="4" rx="2" fill="${accent}"/>
+             <rect x="186" y="${topH/2-2}" width="26" height="4" rx="2" fill="#3a3f52"/>
+             <rect x="222" y="${topH/2-2}" width="26" height="4" rx="2" fill="#3a3f52"/>
+             <rect x="258" y="${topH/2-2}" width="26" height="4" rx="2" fill="#3a3f52"/>`
+          : `<rect x="140" y="${topH/2-2}" width="40" height="4" rx="2" fill="${accent}" opacity=".9"/>
+             <circle cx="230" cy="${topH/2}" r="3" fill="#4a5066"/>
+             <circle cx="252" cy="${topH/2}" r="3" fill="#4a5066"/>
+             <circle cx="274" cy="${topH/2}" r="3" fill="#4a5066"/>`}
+      ` : ''}
+
+      <!-- 内容区 -->
+      <rect x="16" y="${topH+14}" width="288" height="${140-topH}" rx="4" fill="#1a1f2e" opacity=".7"/>
+      <rect x="30" y="${topH+26}" width="90" height="8" rx="3" fill="#2d3448"/>
+      <rect x="30" y="${topH+42}" width="130" height="6" rx="3" fill="#262d3d"/>
+      <rect x="30" y="${topH+56}" width="110" height="6" rx="3" fill="#262d3d"/>
+
+      ${!isMinimal ? `
+        <rect x="150" y="${topH+24}" width="140" height="70" rx="4" fill="#222a3d"/>
+        <rect x="162" y="${topH+34}" width="50" height="5" rx="2" fill="#3a4358"/>
+        <rect x="162" y="${topH+46}" width="70" height="5" rx="2" fill="#333c52"/>
+      ` : ''}
+
+      <!-- 字幕条 -->
+      <rect x="70" y="136" width="180" height="22" rx="${isBold ? 8 : 4}" fill="rgba(8,10,22,.9)"/>
+      <rect x="86" y="144" width="148" height="6" rx="3" fill="#dfe3ec"/>
+    </svg>`;
+}
+
+let tplDialogEl = null;
+
+function closeTemplateDialog() {
+  if (tplDialogEl && tplDialogEl.parentNode) tplDialogEl.remove();
+  tplDialogEl = null;
+}
+
+function openTemplateDialog(e) {
+  if (e) e.stopPropagation();
+  if (!PROJECT) return;
+
+  const cur = PROJECT.config?.template || 'classic';
+  const curTpl = TEMPLATES.find(t => t.id === cur) || TEMPLATES[0];
+
+  const mask = document.createElement('div');
+  mask.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:99998;
+    display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)`;
+
+  mask.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+         width:min(760px,94vw);max-height:88vh;display:flex;flex-direction:column;
+         box-shadow:0 24px 70px rgba(0,0,0,.7);overflow:hidden">
+      <div style="padding:18px 22px 12px">
+        <div style="font-size:15px;font-weight:600">外壳模板</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:4px">
+          当前：${curTpl.name} · 换模板需要重新渲染
+        </div>
+      </div>
+      <div style="padding:0 22px 18px;overflow:auto">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          ${TEMPLATES.map(t => {
+            const on = t.id === cur;
+            return `<div onclick="pickTemplate('${t.id}', event)" data-tpl="${t.id}"
+              style="cursor:pointer;border-radius:10px;overflow:hidden;
+                     border:2px solid ${on ? 'var(--accent)' : 'var(--border)'};
+                     background:${on ? 'rgba(91,91,214,.08)' : 'var(--surface-2)'};
+                     transition:none">
+              <div style="aspect-ratio:16/9;overflow:hidden;display:block">${templatePreviewSVG(t.id)}</div>
+              <div style="padding:9px 11px 11px">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:13px;font-weight:600">${t.name}</span>
+                  ${on ? '<span style="font-size:10px;color:var(--accent)">● 使用中</span>' : ''}
+                </div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:3px;line-height:1.5">${t.desc}</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div style="padding:12px 22px 16px;border-top:1px solid var(--border-soft);
+           display:flex;justify-content:flex-end;gap:8px">
+        <button onclick="closeTemplateDialog()"
+          style="padding:7px 16px;border-radius:7px;border:1px solid var(--border);
+                 background:var(--surface-2);color:var(--text);font-size:13px;cursor:pointer">关闭</button>
+      </div>
+    </div>`;
+
+  mask.addEventListener('click', ev => { if (ev.target === mask) closeTemplateDialog(); });
+  document.body.appendChild(mask);
+  tplDialogEl = mask;
+}
+
+/* ══════════ 语音短句间隔 ══════════ */
+const GAP_OPTIONS = [
+  { value: 0,    label: '无间隔', desc: '句子紧接，节奏快' },
+  { value: 0.3,  label: '0.3 秒', desc: '稍紧凑' },
+  { value: 0.5,  label: '0.5 秒', desc: '默认，自然停顿' },
+  { value: 0.8,  label: '0.8 秒', desc: '留白明显' },
+  { value: 1.0,  label: '1.0 秒', desc: '慢节奏，适合教学' },
+];
+
+function renderGapSwitch() {
+  const cur = PROJECT?.config?.voiceGap ?? 0.5;
+  const opt = GAP_OPTIONS.find(o => o.value === cur) || GAP_OPTIONS[2];
+
+  const label = document.getElementById('gapLabel');
+  if (label) label.textContent = opt.value === 0 ? '无间隔' : `间隔 ${opt.value}s`;
+
+  const menu = document.getElementById('gapMenu');
   if (!menu) return;
-  menu.innerHTML = TEMPLATES.map(t => {
-    const on = t.id === tplId;
-    return `<div class="dd-item" onclick="pickTemplate('${t.id}', event)">
+  menu.innerHTML = GAP_OPTIONS.map(o => {
+    const on = o.value === cur;
+    return `<div class="dd-item" onclick="pickGap(${o.value}, event)">
       <span class="ck">${on ? '✓' : ''}</span>
       <span>
-        <div>${t.name}</div>
-        <div class="desc">${t.desc}</div>
+        <div>${o.label}</div>
+        <div class="desc">${o.desc}</div>
       </span>
     </div>`;
   }).join('');
 }
 
+async function pickGap(value, e) {
+  if (e) e.stopPropagation();
+  document.querySelectorAll('.dd').forEach(d => d.classList.remove('open'));
+  if (!PROJECT) return;
+
+  const prev = PROJECT.config?.voiceGap ?? 0.5;
+  if (prev === value) return;
+
+  // 预估总时长变化
+  const n = SHOTS.length;
+  const delta = (value - prev) * n;
+  const sign = delta > 0 ? '+' : '';
+
+  const ok = await confirmDialog({
+    title: '调整语音短句间隔',
+    body: `每个镜头的配音结束后，会留出静音间隔。<br><br>
+           将改为 <b>${value === 0 ? '无间隔' : value + ' 秒'}</b>，
+           共 ${n} 个镜头，总时长预计 <b>${sign}${delta.toFixed(1)} 秒</b>。<br><br>
+           <span style="color:var(--text-3);font-size:12px">改动后需要重新渲染才生效</span>`,
+    confirmText: '确定修改',
+    cancelText: '取消',
+  });
+  if (!ok) return;
+
+  PROJECT.config = PROJECT.config || {};
+  PROJECT.config.voiceGap = value;
+  try {
+    await persist();
+    renderGapSwitch();
+    toast(`间隔已改为 ${value === 0 ? '无' : value + 's'}，请重新渲染`);
+  } catch (err) {
+    PROJECT.config.voiceGap = prev;
+    toast('保存失败：' + err.message);
+    renderGapSwitch();
+  }
+}
+
 async function pickTemplate(id, e) {
   if (e) e.stopPropagation();
   document.querySelectorAll('.dd').forEach(d => d.classList.remove('open'));
+  closeTemplateDialog();
   if (!PROJECT) return;
   const prev = PROJECT.config?.template || 'classic';
   if (prev === id) return;
@@ -892,27 +1115,61 @@ function renderScriptPane() {
 function renderNotesPane() {
   const box = document.getElementById('notesPane');
   if (!box) return;
-  const open = NOTES.filter(n => n.status === 'open').sort((a, b) => a.time - b.time);
+  const noteStart = (n) => n.start ?? n.time ?? 0;
+  const noteEnd = (n) => n.end ?? noteStart(n);
+  const open = NOTES.filter(n => n.status === 'open').sort((a, b) => noteStart(a) - noteStart(b));
   const done = NOTES.filter(n => n.status !== 'open');
 
-  const card = (n) => `
-    <div class="note-card ${n.status === 'open' ? '' : 'done'}" onclick="seekTo(${n.time})">
+  const scopeTag = (n) => {
+    if (n.scope === 'all') return '<span class="note-scope all">全片</span>';
+    if (n.scope === 'shot') return '<span class="note-scope">整段</span>';
+    return '';
+  };
+
+  const card = (n) => {
+    const st = noteStart(n), en = noteEnd(n);
+    const isRange = en > st + 0.05;
+    const tc = isRange ? `${fmt(st)}–${fmt(en)}` : fmt(st);
+    return `
+    <div class="note-card ${n.status === 'open' ? '' : 'done'}" onclick="seekTo(${st})">
       <div class="note-card-top">
-        <span class="note-tc">${fmt(n.time)}</span>
-        <span class="note-sid">${n.shotId}</span>
+        <span class="note-tc">${tc}</span>
+        ${n.shotId ? `<span class="note-sid">${n.shotId}</span>` : ''}
+        ${scopeTag(n)}
         ${n.status !== 'open' ? '<span style="margin-left:auto;font-size:10px;color:var(--ok)">✓ 已改</span>' : ''}
       </div>
       <div class="note-txt">${escapeHtml(n.text)}</div>
     </div>`;
+  };
 
-  box.innerHTML = `
-    ${open.length ? `<div class="note-group">
-      <div class="note-group-head"><span class="dot warn"></span>待你回复 · ${open.length}</div>
-      ${open.map(card).join('')}</div>` : ''}
-    ${done.length ? `<div class="note-group">
-      <div class="note-group-head"><span class="dot ok"></span>已改好 · ${done.length}</div>
-      ${done.map(card).join('')}</div>` : ''}
-    ${!NOTES.length ? '<div style="padding:30px;text-align:center;color:var(--text-3);font-size:12px">还没有意见</div>' : ''}`;
+  // 分组折叠状态（默认：待处理展开，已改收起）
+  if (state.collapsed === undefined) state.collapsed = { open: false, done: true };
+  const col = state.collapsed;
+
+  const group = (key, label, dotCls, list) => {
+    if (!list.length) return '';
+    const folded = col[key];
+    return `<div class="note-group">
+      <div class="note-group-head foldable" onclick="toggleNoteGroup('${key}')">
+        <span class="fold-arrow ${folded ? 'folded' : ''}">▾</span>
+        <span class="dot ${dotCls}"></span>
+        ${label} · ${list.length}
+      </div>
+      ${folded ? '' : list.map(card).join('')}
+    </div>`;
+  };
+
+  box.innerHTML =
+    group('open', '待处理', 'warn', open) +
+    group('done', '已改好', 'ok', done) +
+    (!NOTES.length ? '<div style="padding:30px;text-align:center;color:var(--text-3);font-size:12px">还没有意见</div>' : '');
+}
+
+/** 折叠/展开意见分组 */
+function toggleNoteGroup(key) {
+  if (!state.collapsed) state.collapsed = { open: false, done: true };
+  state.collapsed[key] = !state.collapsed[key];
+  renderNotesPane();
 }
 
 /* ══════════ 播放器 ══════════ */
@@ -924,8 +1181,17 @@ function fitVideo() {
   const availH = wrap.clientHeight;
   if (availW <= 0 || availH <= 0) return;
   const byW = availW / (16 / 9);
-  if (byW <= availH) { box.style.width = availW + 'px'; box.style.height = byW + 'px'; }
-  else { box.style.height = availH + 'px'; box.style.width = availH * 16 / 9 + 'px'; }
+  let w, h;
+  if (byW <= availH) { w = Math.round(availW); h = Math.round(byW); }
+  else { h = Math.round(availH); w = Math.round(availH * 16 / 9); }
+
+  // 尺寸没变就不写 DOM，避免播放中每帧重排
+  const key = w + 'x' + h;
+  if (box.dataset.size !== key) {
+    box.dataset.size = key;
+    box.style.width = w + 'px';
+    box.style.height = h + 'px';
+  }
 }
 
 function autoPlayerHeight() {
@@ -939,15 +1205,26 @@ function autoPlayerHeight() {
   requestAnimationFrame(fitVideo);
 }
 
-function renderPlayer() {
-  document.getElementById('tcNow').textContent = fmt(state.time);
-  document.getElementById('tcTotal').textContent = fmt(TOTAL);
+/** 只在值变化时才写 DOM，避免播放中每帧触发重排 */
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el && el.textContent !== val) el.textContent = val;
+}
 
+function renderPlayer() {
+  setText('tcNow', fmt(state.time));
+  setText('tcTotal', fmt(TOTAL));
+
+  // 播放图标只在状态切换时重建，不是每帧
   const icon = document.getElementById('playIcon');
   if (icon) {
-    icon.innerHTML = state.playing
-      ? '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>'
-      : '<path d="M8 5v14l11-7z"/>';
+    const want = state.playing ? 'pause' : 'play';
+    if (icon.dataset.state !== want) {
+      icon.dataset.state = want;
+      icon.innerHTML = want === 'pause'
+        ? '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>'
+        : '<path d="M8 5v14l11-7z"/>';
+    }
   }
 
   const v = document.getElementById('realVideo');
@@ -988,9 +1265,10 @@ function renderPlayer() {
     }, { once: true });
     return;   // 等事件回调再收尾
   }
-  v.style.display = 'block';
-  if (v.readyState >= 2) ph.classList.add('hide');
-  fitVideo();
+  if (v.style.display !== 'block') v.style.display = 'block';
+  if (v.readyState >= 2 && !ph.classList.contains('hide')) ph.classList.add('hide');
+  syncVideoPausedClass();
+  // 只在容器尺寸可能变化时重算（拖拽/窗口缩放已单独处理），播放中不必每帧算
 }
 
 function seekTo(t) {
@@ -1002,44 +1280,119 @@ function seekTo(t) {
 
 function skip(sec) { seekTo(state.time + sec); }
 
+/** 点击视频画面：播放 / 暂停 */
+function onVideoClick() {
+  const v = document.getElementById('realVideo');
+  if (!v || !v.src) return;          // 没有视频时不响应
+  togglePlay();
+}
+
+/** 根据视频真实状态同步 .paused 类（控制中心播放图标） */
+// 视频状态变化时自动同步图标（原生事件，最可靠）
+document.addEventListener('DOMContentLoaded', () => {
+  const v = document.getElementById('realVideo');
+  if (!v) return;
+  ['play', 'pause', 'ended', 'loadeddata'].forEach(ev =>
+    v.addEventListener(ev, syncVideoPausedClass));
+});
+
+function syncVideoPausedClass() {
+  const box = document.getElementById('videoBox');
+  const v = document.getElementById('realVideo');
+  if (!box || !v) return;
+  box.classList.toggle('paused', v.paused);
+}
+
 function togglePlay() {
   const v = document.getElementById('realVideo');
-  state.playing = !state.playing;
-  if (state.playing) {
-    if (v && v.src) {
-      v.currentTime = state.time;
-      // play() 可能因自动播放策略被拒绝：失败时退回静音播放，并提示用户
-      v.play().catch((err) => {
-        console.warn('播放被拒绝:', err.name);
-        v.muted = true;
-        renderMuteIcon();
-        v.play().then(() => {
-          toast('浏览器要求先静音播放，点右下角喇叭图标恢复声音');
-        }).catch(() => {
-          state.playing = false;
-          clearInterval(state.timer);
-          renderPlayer();
-          toast('无法播放，请再点一次播放按钮');
-        });
-      });
-    }
-    state.timer = setInterval(() => {
-      if (v && v.src) state.time = v.currentTime;
-      else { state.time += 0.1; if (state.time >= TOTAL) { state.time = TOTAL; togglePlay(); } }
-      sync();
-      if (state.time >= TOTAL && state.playing) togglePlay();
-    }, 100);
+  if (!v || !v.src) return;
+
+  // 以视频真实状态为准，不以内部状态为准，避免状态错位
+  if (!v.paused) {
+    pausePlayback();
   } else {
-    if (v && v.src) v.pause();
-    clearInterval(state.timer);
+    startPlayback();
   }
-  renderPlayer();
-  renderMuteIcon();
 }
+
+function startPlayback() {
+  const v = document.getElementById('realVideo');
+  if (!v || !v.src) return;
+
+  // 清掉可能存在的旧计时器/动画帧，避免叠加
+  if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  if (state.raf) { cancelAnimationFrame(state.raf); state.raf = null; }
+
+  v.currentTime = state.time;
+
+  const begin = () => {
+    state.playing = true;
+    syncVideoPausedClass();
+    renderPlayer();
+    renderMuteIcon();
+    // 用 rAF 驱动，只在需要时更新 UI；时间码每 200ms 才刷新一次
+    let lastUi = 0;
+    const tick = (ts) => {
+      if (v.paused) return;
+      state.time = v.currentTime;
+      // 播放头每帧动，其余 UI 200ms 刷一次
+      updatePlayhead();
+      if (ts - lastUi > 200) {
+        lastUi = ts;
+        setText('tcNow', fmt(state.time));
+        setText('cmChip', fmt(state.time));
+        const sh = shotAt(state.time);
+        if (sh && sh.id !== state.shot) {
+          state.shot = sh.id;
+          renderShots();
+          document.querySelectorAll('.tl-seg').forEach(el => {
+            el.classList.toggle('sel', el.dataset.shotId === state.shot);
+          });
+        }
+      }
+      if (v.ended || (TOTAL > 0 && state.time >= TOTAL - 0.05)) {
+        pausePlayback();
+        return;
+      }
+      state.raf = requestAnimationFrame(tick);
+    };
+    state.raf = requestAnimationFrame(tick);
+  };
+
+  v.play().then(begin).catch((err) => {
+    // 自动播放策略拒绝时，静音重试一次
+    console.warn('播放被拒绝:', err.name);
+    v.muted = true;
+    renderMuteIcon();
+    v.play().then(() => {
+      begin();
+      toast('浏览器要求静音播放，点右下角喇叭图标恢复声音');
+    }).catch(() => {
+      state.playing = false;
+      renderPlayer();
+      toast('无法播放，请再点一次播放按钮');
+    });
+  });
+}
+
+function pausePlayback() {
+  const v = document.getElementById('realVideo');
+  if (v) {
+    v.pause();
+    state.time = v.currentTime;   // 同步真实位置
+  }
+  state.playing = false;
+  if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  renderPlayer();
+  sync();
+}
+
 function stopPlay() {
   const v = document.getElementById('realVideo');
   if (v && v.src) v.pause();
-  state.playing = false; clearInterval(state.timer);
+  state.playing = false;
+  if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  if (state.raf) { cancelAnimationFrame(state.raf); state.raf = null; }
 }
 
 /** 静音切换 */
@@ -1174,6 +1527,24 @@ document.addEventListener('click', () => {
 });
 
 /* ══════════ 时间轴 ══════════ */
+/** 播放中的轻量更新：只移动播放头，不重建 DOM（避免悬停态闪烁） */
+let tlWidthCache = 0;
+function refreshTlWidth() {
+  const tl = document.getElementById('timeline');
+  tlWidthCache = tl ? tl.clientWidth : 0;
+}
+
+function updatePlayhead() {
+  const ph = document.getElementById('tlPlayhead');
+  if (!ph || TOTAL <= 0) return;
+  const pct = ((state.time / TOTAL) * 100).toFixed(2);
+  if (ph.dataset.pct === pct) return;
+  ph.dataset.pct = pct;
+  // 用缓存的宽度 + transform，完全不触发布局计算
+  if (!tlWidthCache) refreshTlWidth();
+  ph.style.transform = `translateX(${(tlWidthCache * state.time / TOTAL).toFixed(1)}px)`;
+}
+
 function renderTimeline() {
   const tl = document.getElementById('timeline');
   if (!tl) return;
@@ -1191,11 +1562,17 @@ function renderTimeline() {
   });
 
   NOTES.forEach(n => {
+    const st = n.start ?? n.time ?? 0;
+    const en = n.end ?? st;
+    const cls = n.status !== 'open' ? ' done' : '';
+
+    // 只在起点画圆点，不画范围条
     const m = document.createElement('div');
-    m.className = 'tl-mark' + (n.status !== 'open' ? ' done' : '');
-    m.style.left = (n.time / TOTAL * 100) + '%';
-    m.title = `${fmt(n.time)} · ${n.shotId}：${n.text}`;
-    m.dataset.noteTime = n.time;
+    m.className = 'tl-mark' + cls;
+    m.style.left = (st / TOTAL * 100) + '%';
+    m.dataset.noteStart = st;
+    const span = (en > st + 0.05) ? `${fmt(st)}-${fmt(en)}` : fmt(st);
+    m.title = `${span} · ${n.shotId || '全片'}：${n.text}`;
     tl.appendChild(m);
   });
 
@@ -1210,6 +1587,8 @@ function renderTimeline() {
   const ticks = [0, TOTAL * 0.25, TOTAL * 0.5, TOTAL * 0.75, TOTAL];
   ruler.innerHTML = ticks.map(t =>
     `<span class="tl-tick" style="left:${t / TOTAL * 100}%">${fmt(t)}</span>`).join('');
+
+  refreshTlWidth();
 }
 
 /* 时间轴交互：统一处理点击与拖动 */
@@ -1246,8 +1625,9 @@ window.addEventListener('mouseup', (e) => {
   const target = e.target;
   // 1. 点在意见标记上 → 跳到该意见时间
   const mark = target.closest?.('.tl-mark');
-  if (mark && mark.dataset.noteTime) {
-    seekTo(Number(mark.dataset.noteTime));
+  const markEl = target.closest?.('.tl-mark');
+  if (markEl && markEl.dataset.noteStart) {
+    seekTo(Number(markEl.dataset.noteStart));
     return;
   }
   // 2. 点在分镜块上 → 跳到该分镜起点并播放
@@ -1255,9 +1635,10 @@ window.addEventListener('mouseup', (e) => {
   if (seg && seg.dataset.shotStart) {
     const t = Number(seg.dataset.shotStart);
     state.shot = seg.dataset.shotId;
+    pausePlayback();          // 先停下，避免播放中改 currentTime 引起跳变
     seekTo(t);
     renderShots();
-    if (!state.playing) togglePlay();
+    startPlayback();          // 再从头播该镜头
     return;
   }
   // 3. 点在空白处 → 精确定位
@@ -1266,9 +1647,7 @@ window.addEventListener('mouseup', (e) => {
 
 /* ══════════ 意见输入 ══════════ *//* ══════════ 意见输入 ══════════ */
 function renderComments() {
-  const chip = document.getElementById('cmChip');
-  if (chip) chip.textContent = fmt(state.time);
-
+  setText('cmChip', fmt(state.time));
 }
 
 function setScope(scope) {
@@ -1296,13 +1675,31 @@ async function saveComment() {
   const text = inp.value.trim();
   if (!text) return;
   const sh = shotAt(state.time);
-  // 按范围记录：这一秒 → 精确时间点；这一段 → 镜头起点；全片 → 0
-  const recTime = state.scope === 'shot' ? sh.start
-    : state.scope === 'all' ? 0
-    : +state.time.toFixed(2);
+
+  // 按范围记录【时间段】，而不是单个时间点
+  // second: 当前时刻 ±1 秒
+  // shot:   整个镜头区间
+  // all:    整片 0 ~ TOTAL
+  let start, end;
+  if (state.scope === 'all') {
+    start = 0; end = TOTAL;
+  } else if (state.scope === 'shot') {
+    start = sh.start; end = sh.start + sh.dur;
+  } else {
+    start = Math.max(0, state.time - 1);
+    end = Math.min(TOTAL, state.time + 1);
+  }
+
   NOTES.push({
-    id: 'n' + Date.now(), time: recTime, shotId: sh.id, text,
-    status: 'open', scope: state.scope, createdAt: new Date().toISOString(),
+    id: 'n' + Date.now(),
+    start: +start.toFixed(2),
+    end: +end.toFixed(2),
+    time: +start.toFixed(2),      // 兼容旧字段
+    shotId: state.scope === 'all' ? null : sh.id,
+    text,
+    status: 'open',
+    scope: state.scope,
+    createdAt: new Date().toISOString(),
   });
   inp.value = '';
   renderComments(); renderShots(); renderTimeline(); renderSummary(); renderNotesPane();
@@ -1311,16 +1708,29 @@ async function saveComment() {
 
 /* ══════════ 同步与总渲染 ══════════ */
 function sync() {
-  renderPlayer(); renderTimeline(); renderComments();
+  renderPlayer();
+  updatePlayhead();        // 只移动播放头
+  renderComments();
   const sh = shotAt(state.time);
-  if (sh && sh.id !== state.shot) { state.shot = sh.id; renderShots(); }
+  if (sh && sh.id !== state.shot) {
+    state.shot = sh.id;
+    renderShots();
+    // 镜头切换时才需要更新时间轴高亮（不是每帧）
+    document.querySelectorAll('.tl-seg').forEach(el => {
+      el.classList.toggle('sel', el.dataset.shotId === state.shot);
+    });
+  }
+  // 仅在暂停时同步视频位置；播放中视频才是状态源，反向覆盖会打断播放
   const v = document.getElementById('realVideo');
-  if (v && v.src && Math.abs(v.currentTime - state.time) > 0.3) v.currentTime = state.time;
+  if (v && v.src && v.paused && Math.abs(v.currentTime - state.time) > 0.3) {
+    v.currentTime = state.time;
+  }
 }
 
 function renderAll() {
   renderVersionSwitch();
   renderTemplateSwitch();
+  renderGapSwitch();
   renderShots();
   renderPlayer();
   renderTimeline();
@@ -1516,6 +1926,20 @@ function showPromptModal(text) {
 }
 
 /* ══════════ 导出成片 ══════════ */
+/** 只更新版本相关数据，不动播放器 */
+async function refreshVersionInfo() {
+  if (!CURRENT_WS) return;
+  try {
+    const p = await api('/api/project?id=' + encodeURIComponent(CURRENT_WS));
+    PROJECT = p;
+    lastKnownVersion = p.currentVersion || 0;
+    renderVersionSwitch();
+    renderTemplateSwitch();
+  } catch (e) {
+    console.warn('版本信息刷新失败:', e.message);
+  }
+}
+
 async function doExport() {
   const btn = document.getElementById('btnExport');
   const bar = document.getElementById('renderBar');
@@ -1565,8 +1989,10 @@ async function doExport() {
 
     setRenderStatus(`已导出 ${res.filename || ''}`, 100);
     toast(`成片已导出：${res.filename || '完成'}`);
-    const wsId = CURRENT_WS;
-    await loadWorkspace(wsId);
+
+    // 只刷新版本信息，不重载整个工作区（避免播放器被重置、页面闪动）
+    await refreshVersionInfo();
+
     setTimeout(() => { bar.style.display = 'none'; }, 2000);
   } catch (e) {
     setRenderStatus('导出失败：' + e.message, 0);
@@ -1634,7 +2060,7 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'Space') { togglePlay(); e.preventDefault(); }
 });
 
-window.addEventListener('resize', () => fitVideo());
+window.addEventListener('resize', () => { fitVideo(); refreshTlWidth(); });
 
 /* ══════════ 启动 ══════════ */
 loadWorkspaces().catch(e => {

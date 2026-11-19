@@ -15,6 +15,7 @@
  *   clipdesk export <工作区>            导出成片到 versions/vN/
  *   clipdesk thumbs <工作区>            生成缩略图
  *   clipdesk status                   环境检查
+ *   clipdesk stop                     停止本地服务
  *
  * 工作区参数可用 id、全名或部分名称。
  */
@@ -185,6 +186,28 @@ async function cmdThumbs(args) {
   console.log(C.green(`✓ ${ok}/${r.length} 张`));
 }
 
+/** 停止本地服务 */
+function cmdStop() {
+  const { execSync } = require("node:child_process");
+  try {
+    const pids = execSync(`lsof -ti:${PORT}`, { encoding: "utf8" }).trim().split("\n").filter(Boolean);
+    if (!pids.length) { console.log("服务未运行"); return; }
+    let stopped = 0;
+    for (const pid of pids) {
+      try {
+        const cmd = execSync(`ps -p ${pid} -o command=`, { encoding: "utf8" }).trim();
+        if (cmd.includes("server.js") || cmd.includes("clipdesk")) {
+          process.kill(Number(pid), "SIGKILL");
+          stopped++;
+        }
+      } catch { /* 已退出 */ }
+    }
+    console.log(stopped ? C.green(`✓ 已停止 ${stopped} 个服务进程`) : "未找到 ClipDesk 服务进程");
+  } catch {
+    console.log("服务未运行");
+  }
+}
+
 async function cmdStatus() {
   const ws = require(path.join(ROOT, "lib/workspace"));
   const render = require(path.join(ROOT, "lib/render"));
@@ -223,6 +246,7 @@ async function main() {
     case "export": return cmdExport(args);
     case "thumbs": return cmdThumbs(args);
     case "status": return cmdStatus();
+    case "stop": return cmdStop();
     case "web":
     case "open": return cmdWeb(args);
     case "help":

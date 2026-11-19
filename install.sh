@@ -8,15 +8,13 @@
 #   2. 准备 ffmpeg（优先用项目内置，其次系统，最后按需下载）
 #   3. 检查 macOS say（配音用）
 #   4. 注册 clipdesk 命令
-#   5. 确认视频项目根目录（安装时只需确认一次）
-#   6. 安装 Skill 到 ~/.dsh/skills/（clipdesk + demo-video）
-#   7. 自检
+#   5. 安装配套 Skill 到 ~/.dsh/skills/
+#   6. 自检
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_SRC="$ROOT/skill/clipdesk"
-DEMO_SKILL_SRC="$ROOT/skill/demo-video"
 SKILL_DST="${DSH_SKILLS_DIR:-$HOME/.dsh/skills}"
 BIN_DST="${CLIPDESK_BIN_DIR:-$HOME/.local/bin}"
 
@@ -92,16 +90,6 @@ else
   yellow "… 非 macOS，配音功能不可用（其他功能正常）"
 fi
 
-# ── 3.5 Pillow（逐帧合成必需）──
-if python3 -c "import PIL" 2>/dev/null; then
-  PILLOW_VER=$(python3 -c "import PIL; print(PIL.__version__)" 2>/dev/null)
-  green "✓ Pillow $PILLOW_VER"
-else
-  red "✗ 缺少 Pillow（逐帧合成必需）"
-  echo "  请执行：pip3 install Pillow"
-  exit 1
-fi
-
 # ── 4. 注册命令 ──
 mkdir -p "$BIN_DST"
 ln -sf "$ROOT/bin/clipdesk" "$BIN_DST/clipdesk"
@@ -114,85 +102,19 @@ case ":$PATH:" in
      echo "    echo 'export PATH=\"\$PATH:$BIN_DST\"' >> ~/.zshrc && source ~/.zshrc" ;;
 esac
 
-# ── 5. 确认视频项目根目录 ──
-CONF_FILE="$HOME/.clipdesk.json"
-DEFAULT_VIDEO_ROOT="$HOME/Videos/clipdesk"
-
-echo "── 视频项目根目录 ──"
-
-# 已有配置则沿用
-EXISTING_ROOT=""
-if [ -f "$CONF_FILE" ]; then
-  EXISTING_ROOT=$(node -e "try{const c=require('$CONF_FILE');process.stdout.write(c.videoRoot||'')}catch(e){}" 2>/dev/null || true)
-fi
-
-if [ -n "$EXISTING_ROOT" ]; then
-  green "✓ 已有配置：$EXISTING_ROOT"
-  VIDEO_ROOT="$EXISTING_ROOT"
-else
-  echo ""
-  echo "  所有视频项目都会建在这个目录下，每个项目一个子文件夹。"
-  echo ""
-  echo "  默认：$DEFAULT_VIDEO_ROOT"
-  echo ""
-  printf "  直接回车用默认，或输入其他路径："
-  read -r USER_ROOT || true
-  USER_ROOT="${USER_ROOT:-}"
-  # 去掉首尾空格与包裹的引号
-  USER_ROOT="${USER_ROOT#"${USER_ROOT%%[![:space:]]*}"}"
-  USER_ROOT="${USER_ROOT%"${USER_ROOT##*[![:space:]]}"}"
-  if [[ "$USER_ROOT" == \"*\" ]]; then USER_ROOT="${USER_ROOT#\"}"; fi
-  if [[ "$USER_ROOT" == *\" ]]; then USER_ROOT="${USER_ROOT%\"}"; fi
-
-  if [ -z "$USER_ROOT" ]; then
-    VIDEO_ROOT="$DEFAULT_VIDEO_ROOT"
-  else
-    # 展开 ~ 和相对路径
-    case "$USER_ROOT" in
-      "~"*) VIDEO_ROOT="${USER_ROOT/#\~/$HOME}" ;;
-      /*)   VIDEO_ROOT="$USER_ROOT" ;;
-      *)    VIDEO_ROOT="$(cd "$(dirname "$USER_ROOT")" 2>/dev/null && pwd)/$(basename "$USER_ROOT")" || VIDEO_ROOT="$USER_ROOT" ;;
-    esac
-  fi
-
-  mkdir -p "$VIDEO_ROOT" 2>/dev/null || {
-    red "✗ 无法创建目录：$VIDEO_ROOT"
-    echo "  请确认路径是否可写，然后重新运行安装。"
-    exit 1
-  }
-
-  # 写入配置
-  printf '{\n  "videoRoot": "%s"\n}\n' "$VIDEO_ROOT" > "$CONF_FILE"
-  green "✓ 根目录：$VIDEO_ROOT"
-  echo "  配置已保存到 $CONF_FILE"
-fi
-
-echo ""
-
-# ── 6. 安装 Skill ──
+# ── 5. 安装 Skill ──
 if [ -d "$SKILL_SRC" ]; then
   mkdir -p "$SKILL_DST"
-  # clipdesk：渲染与返工
   rm -rf "$SKILL_DST/clipdesk"
   cp -R "$SKILL_SRC" "$SKILL_DST/clipdesk"
   # 把实际安装路径写进 Skill，供 Agent 定位
   echo "$ROOT" > "$SKILL_DST/clipdesk/INSTALL_PATH"
   green "✓ Skill 已安装：$SKILL_DST/clipdesk"
-
-  # demo-video：录屏与切片（配套 Skill）
-  if [ -d "$DEMO_SKILL_SRC" ]; then
-    rm -rf "$SKILL_DST/demo-video"
-    cp -R "$DEMO_SKILL_SRC" "$SKILL_DST/demo-video"
-    echo "$ROOT" > "$SKILL_DST/demo-video/INSTALL_PATH"
-    green "✓ Skill 已安装：$SKILL_DST/demo-video"
-  else
-    yellow "… 未找到 demo-video skill，跳过"
-  fi
 else
   yellow "… 未找到 skill 目录，跳过"
 fi
 
-# ── 7. 自检 ──
+# ── 6. 自检 ──
 echo ""
 echo "── 自检 ──"
 cd "$ROOT"
@@ -200,10 +122,6 @@ CLIPDESK_NO_OPEN=1 node bin/clipdesk status || true
 
 echo ""
 green "安装完成"
-echo ""
-echo "已装 Skill："
-echo "  clipdesk      渲染、审片、返工、出成片"
-echo "  demo-video    录屏、切片、接入 clipdesk"
 echo ""
 echo "下一步："
 echo "  clipdesk              启动审片台并打开浏览器"
